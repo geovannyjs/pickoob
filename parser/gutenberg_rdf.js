@@ -2,6 +2,22 @@ const fs = require('fs')
 const RdfXmlParser = require("rdfxml-streaming-parser").RdfXmlParser
 
 
+const MongoClient = require('mongodb').MongoClient;
+
+
+// Connection url
+const url = 'mongodb://localhost:27017';
+
+
+// Database Name
+const dbName = 'pickoob';
+
+
+
+
+
+
+
 if(!process.argv[2]) throw new Error('You must pass the RDF file as parameter')
 
 const myParser = new RdfXmlParser()
@@ -75,3 +91,24 @@ myParser.import(myTextStream)
     console.log(author)
     console.log('Done')
   })
+
+// Connect using MongoClient
+
+MongoClient.connect(url, {useUnifiedTopology: true} ,function(err, client) {
+
+  // Use the admin database for the operation
+  
+  const adminDb = client.db(dbName).admin();
+  // List all the available databases
+  client.db("pickoob").collection("book").insert(book)
+  client.db("pickoob").collection("author").insert(author)
+  adminDb.listDatabases(function(err, dbs) {
+  console.log("testando");
+  
+  client.close();
+  
+  });
+  
+  });
+
+

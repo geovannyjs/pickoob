@@ -1,13 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const MongoClient = require('mongodb').MongoClient;
 
 
-// Connection url db
-const url = 'mongodb://localhost:27017';
-
-
-const dbName = 'pickoob';
 
 const { exec } = require("child_process");
 //criando caminho inicial
