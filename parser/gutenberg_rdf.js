@@ -100,8 +100,8 @@ MongoClient.connect(url, {useUnifiedTopology: true} ,function(err, client) {
   
   const adminDb = client.db(dbName).admin();
   // List all the available databases
-  client.db("pickoob").collection("book").insert(book)
-  client.db("pickoob").collection("author").insert(author)
+  client.db(dbName).collection("book").insert(book)
+  client.db(dbName).collection("author").insert(author)
   adminDb.listDatabases(function(err, dbs) {
   console.log("testando");
   
