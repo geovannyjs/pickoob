@@ -1,26 +1,17 @@
 const fs = require('fs')
 
 const RdfXmlParser = require("rdfxml-streaming-parser").RdfXmlParser
-const MongoClient = require('mongodb').MongoClient;
+const mongo = require('mongodb')
 
 
 // returns the last element of an array
 const last = (a) => a[a.length - 1]
 
 
-// Connection url
-const url = 'mongodb://localhost:27017';
-
-
-// Database Name
-const dbName = 'pickoob';
-
-
-
 if(!process.argv[2]) throw new Error('You must pass the RDF file as parameter')
 
-const myParser = new RdfXmlParser()
-const myTextStream = fs.createReadStream(process.argv[2])
+const rdfParser = new RdfXmlParser()
+const textStream = fs.createReadStream(process.argv[2])
 
 
 let book = {
@@ -91,32 +82,42 @@ const gather = (o) => {
 }
 
 
-// debug structure
-const fn = (o) => console.log(JSON.stringify(o))
+// find the row, if already exists returns the ObjectId, otherwise insert it and return the ObjectId
+// JS Promise flats another returned Promise automatically
+const insertNoDuplicated = (col, search, data) => col.findOne(search).then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId)).then(id => new mongo.ObjectID(id))
 
-myParser.import(myTextStream)
+
+rdfParser.import(textStream)
   .on('data', gather)
   .on('error', console.error)
   .on('end', () => {
-    console.log(author)
-    console.log(shelf)
-    console.log(book)
-    console.log('Done')
+
+    // MongoDB
+    // connection url
+    const url = 'mongodb://localhost:27017';
+    // catabase Name
+    const dbName = 'pickoob';
+
+    // connection
+    mongo.MongoClient.connect(url, { useUnifiedTopology: true }).then(client => {
+
+      let authorOIdsPromises = author.filter(x => !!x.name).map(a => insertNoDuplicated(client.db(dbName).collection('author'), { name: a.name }, a))
+
+      let shelfOIdsPromises = shelf.filter(x => !!x.name).map(s => insertNoDuplicated(client.db(dbName).collection('shelf'), { name: s.name }, s))
+
+      Promise.all(authorOIdsPromises).then(authorOIds => {
+        Promise.all(shelfOIdsPromises).then(shelfOIds => {
+          book.author = authorOIds
+          book.shelf = shelfOIds
+
+          insertNoDuplicated(client.db(dbName).collection('book'), { title: book.title }, book).then(() => {
+            console.log('Done')
+            client.close()
+          })
+
+        })
+      })
+
+    })
+
   })
-
-// Connect using MongoClient
-
-MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
-
-  // insert authors
-  author.forEach(a => { client.db(dbName).collection("author").insertOne(a) })
-
-  // insert shelves
-  shelf.forEach(s => { client.db(dbName).collection("shelf").insertOne(s) })
-
-  // insert book
-  client.db(dbName).collection("book").insertOne(book)
-  
-  //client.close()
-  
-})
