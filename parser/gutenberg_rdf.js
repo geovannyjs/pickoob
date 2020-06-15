@@ -101,9 +101,23 @@ rdfParser.import(textStream)
     // connection
     mongo.MongoClient.connect(url, { useUnifiedTopology: true }).then(client => {
 
-      let authorOIdsPromises = author.filter(x => !!x.name).map(a => insertNoDuplicated(client.db(dbName).collection('author'), { name: a.name }, a))
+      let authorOIdsPromises = author
+        // ensure the item is valid
+        .filter(x => x.name || x.alias)
+        // ensure name and alias are fullfiled
+        .map(x => {
+          if(!x.name) x.name = x.alias
+          else if(!x.alias) x.alias = x.name
+          return x
+        })
+        // convert to an array of Promises of ObjectIds
+        .map(a => insertNoDuplicated(client.db(dbName).collection('author'), { name: a.name }, a))
 
-      let shelfOIdsPromises = shelf.filter(x => !!x.name).map(s => insertNoDuplicated(client.db(dbName).collection('shelf'), { name: s.name }, s))
+      let shelfOIdsPromises = shelf
+        // ensure the item is valid
+        .filter(x => !!x.name)
+        // convert to an array of Promises of ObjectIds
+        .map(s => insertNoDuplicated(client.db(dbName).collection('shelf'), { name: s.name }, s))
 
       Promise.all(authorOIdsPromises).then(authorOIds => {
         Promise.all(shelfOIdsPromises).then(shelfOIds => {
