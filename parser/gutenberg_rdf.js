@@ -30,7 +30,7 @@ const parseRDF = (rdf) => {
       source: {
         type: 'gutenberg'
       }
-    }
+    },
     author = [{}],
     shelf = [],
     shelfCapture = false
