@@ -1,6 +1,7 @@
 var http         = require('http')
 var Router       = require('router')
 var finalhandler = require('finalhandler')
+const querystring = require('querystring');
 
 
 const mongo = require('mongodb');
@@ -9,9 +10,9 @@ const url = 'mongodb://localhost:27017';
 // Database Name
 const dbName = 'pickoob';
 
-let buildMenu = () => '<p>Menu</p>'
+let searchField = () => '<form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form> <br>'
 
-
+//pesquisa.indexOF()
 
 //DB connection
 mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
@@ -47,14 +48,24 @@ router.get('/', (req, res) => {
   res.end('home\n')
   */
 
-  res.write(buildMenu())
+  res.write(searchField())
   
     // insert book
-    client.db(dbName).collection("book").find({}).toArray((err, items) => {
-        items.forEach(b => res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`))
-        res.end()
+    //res.write(`<h1>Categories</h1><br>`)
+    client.db(dbName).collection("shelf").find({}).toArray((err, items) => {
+        items.forEach(b => res.write(`<a href="/shelf/${b.name}/${b._id}">${b.name}</a><br>`))
+        //res.end()
     })
-    
+    //res.write(`<h1>Authors</h1><br>`) esta sendo impresso antes do resultado das consultas...
+    client.db(dbName).collection("author").find({}).toArray((err, items) => {
+      items.forEach(b => res.write(`<a href="/author/${b.name}/${b._id}">${b.name}</a><br>`))
+      //res.end()
+  })
+    //res.write(`<h1>Books</h1><br>`)
+    client.db(dbName).collection("book").find({}).toArray((err, items) => {
+      items.forEach(b => res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`))
+      res.end()
+})  
 
 
 })
@@ -65,7 +76,7 @@ router.get('/book', function (req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //req.params = {type: ''}
     // with respond with the the params that were passed in
-
+    res.write(searchField())
     client.db(dbName).collection("book").find({}).toArray((err, items) => {
         items.forEach(b => {
           let finalTitle = b.title.toLowerCase()
@@ -82,12 +93,13 @@ router.get('/shelf', function (req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //req.params = {type: 'lista de categorias'}
 
+    res.write(searchField())
     client.db(dbName).collection("shelf").find({}).toArray((err, items) => {
         items.forEach(b => {
 
           let finalName = b.name.toLowerCase()
           finalName = finalName.replace(/\s/g, "-")
-          res.write(`<a href="/book/${finalName}/${b._id}">${b.name}</a><br>`)})
+          res.write(`<a href="/shelf/${finalName}/${b._id}">${b.name}</a><br>`)})
         res.end('lista de categorias')
     })
   })
@@ -96,13 +108,15 @@ router.get('/author', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //req.params = {type: 'lista de autores'}
+
+    res.write(searchField())
     client.db(dbName).collection("author").find({}).toArray((err, items) => {
 
         items.forEach(b => {
-          
-          let finalName = b.name.toLowerCase()
-          finalName = finalName.replace(/\s/g, "-")
-          res.write(`<a href="/book/${finalName}/${b._id}">${b.name}</a><br>`)})
+
+            let finalName = b.name.toLowerCase()
+            finalName = finalName.replace(/\s/g, "-")
+          res.write(`<a href="/author/${finalName}/${b._id}">${b.name}</a><br>`)})
         res.end('lista de autores')
     })
   })
@@ -112,10 +126,10 @@ router.get('/author', function (req, res) {
   router.get('/book/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.write(buildMenu())
+    //res.write(buildMenu())
     //res.write(`Você acessou o livro de titulo ${req.params.title} e de id ${req.params.id}\n`)
     //req.params = {type: 'lista de autores'}
-
+    res.write(searchField())
     client.db(dbName).collection("book").findOne({_id: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
       //let finalTitle = b.title.toLowerCase()
       res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>${b.rights}`)
@@ -130,11 +144,11 @@ router.get('/author', function (req, res) {
     router.get('/shelf/:title/:id', function (req, res) {
         res.statusCode = 200
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
-        res.write(buildMenu())
+        //res.write(buildMenu())
     //res.write(`Você acessou o livro de titulo ${req.params.title} e de id ${req.params.id}\n`)
     //req.params = {type: 'lista de autores'}
-
-        client.db(dbName).collection("shelf").findOne({_id: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
+    res.write(searchField())
+        client.db(dbName).collection("book").findOne({shelf: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
             res.write(`<a href="/shelf/${b.title}/${b._id}">${b.title}</a><br>`)
             res.end('lista de livros\n')
         })
@@ -144,30 +158,74 @@ router.get('/author', function (req, res) {
     router.get('/author/:name/:id', function (req, res) {
         res.statusCode = 200
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
-        res.write(buildMenu())
+        //res.write(buildMenu())
         //res.write(`Você acessou o livro de titulo ${req.params.title} e de id ${req.params.id}\n`)
         //req.params = {type: 'lista de autores'}
-    
-        client.db(dbName).collection("book").findOne({_id: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-            res.write(`<a href="/book/${b.name}/${b._id}">${b.name}</a><br>`)
+        res.write(searchField())
+        client.db(dbName).collection("book").findOne({author: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
+            res.write(`<a href="/author/${b.title}/${b._id}">${b.title}</a><br>`)
             res.end('lista de livros\n')
         })
     })
 
 
-// make another router with our options
-var handler = Router()
+    router.get('/search', function (req, res) {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      //res.write(buildMenu())
+  //res.write(`Você acessou o livro de titulo ${req.params.title} e de id ${req.params.id}\n`)
+  //req.params = {type: 'lista de autores'}
+      //console.log(url)
+      
+      
+      //var urls = new URL(window.location.href)
+      //console.log(urls)
+      console.log(Object.values(querystring.parse(req.originalUrl)))
+      //console.log("O VALOR DO REQUEST É: " + urls.searchParams.get("search"))
+      let searchGoal = Object.values(querystring.parse(req.originalUrl))
+      res.write(searchField())
+      //var query = {title : /^searchGoal/}
+      // client.db(dbName).collection("book").findOne({title: {$regex: new RegExp('^' + searchGoal)}}, {}, (err, b) => {  
+      //   res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`)
+      //     res.end('lista de livros\n')
+      // })
 
-// mount our new router to a route that accepts a param
-router.use('/:path', handler)
 
-handler.get('/', function (req, res) {
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
+        items.forEach(b => {
+          let finalTitle = b.title.toLowerCase()
+          finalTitle = finalTitle.replace(/\s/g, "-")
+          res.write(`<a href="/book/${finalTitle}/${b._id}">${b.title}</a><br>`)
+          //res.end('lista de livros')
+        })
+        
+    })
 
-  // will respond with the param of the router's parent route
-  res.end(path + '\n')
+    client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
+      items.forEach(b => {
+        let finalTitle = b.name.toLowerCase()
+        finalTitle = finalTitle.replace(/\s/g, "-")
+        res.write(`<a href="/author/${finalTitle}/${b._id}">${b.name}</a><br>`)
+        //res.end('lista de livros')
+      })
+      
+  })
+
+  client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
+    items.forEach(b => {
+      let finalTitle = b.name.toLowerCase()
+      finalTitle = finalTitle.replace(/\s/g, "-")
+      res.write(`<a href="/shelf/${finalTitle}/${b._id}">${b.name}</a><br>`)
+      res.end('lista de livros')
+    })
+
 })
+
+
+
+  })
+
+
 
 // make our http server listen to connections
 server.listen(8080)
