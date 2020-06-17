@@ -47,15 +47,15 @@ const parseRDF = (rdf, next) => {
       // after the o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/bookshelf'
       // we can have two types of tuples, so we discard that one that is not interesting to us
       if(o.predicate.value != 'http://purl.org/dc/dcam/memberOf') {
-        shelf.push({ name: o.object.value })
+        shelf.push({ name: (o.object.value).toLowerCase() })
         shelfCapture = false
       }
     }
 
     // book title
-    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value
+    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = (o.object.value).toLowerCase()
     // issue date
-    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/issued') book.issued = o.object.value
+    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/issued') book.issued = (o.object.value)
     //language
     else if((o.predicate && o.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value') && (o.object.datatype.value === 'http://purl.org/dc/terms/RFC4646')) book.language = o.object.value
 
@@ -74,7 +74,7 @@ const parseRDF = (rdf, next) => {
     //alias
     else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/alias') {
       if(last(author).alias) author.push({})
-      last(author).alias = o.object.value
+      last(author).alias = (o.object.value).toLowerCase()
     }
     //deathdate
     else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/deathdate') {
@@ -84,7 +84,7 @@ const parseRDF = (rdf, next) => {
     //name
     else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/name') {
       if(last(author).name) author.push({})
-      last(author).name = o.object.value
+      last(author).name = (o.object.value).toLowerCase()
     }
 
   }
