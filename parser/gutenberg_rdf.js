@@ -17,14 +17,10 @@ const insertNoDuplicated = (col, search, data) => col.findOne(search).then(r => 
 if(!process.argv[2]) throw new Error('You must pass the dir path as parameter')
 
 
-const parseRDF = (rdf) => {
+const parseRDF = (rdf, next) => {
 
   // not a RDF file
   if(! (/\.rdf$/i).test(rdf)) return
-
-  const rdfParser = new RdfXmlParser()
-  const textStream = fs.createReadStream(rdf)
-
 
   let book = {
       source: {
@@ -94,7 +90,11 @@ const parseRDF = (rdf) => {
   }
 
 
-  rdfParser.import(textStream)
+  const rdfParser = new RdfXmlParser()
+
+  //rdfParser.import(textStream)
+  fs.createReadStream(rdf)
+    .pipe(rdfParser)
     .on('data', gather)
     .on('error', console.error)
     .on('end', () => {
@@ -134,16 +134,16 @@ const parseRDF = (rdf) => {
             insertNoDuplicated(client.db(dbName).collection('book'), { title: book.title }, book).then(() => {
               console.log(`Done processing the file ${rdf}`)
               client.close()
+              next()
             })
 
           })
         })
 
       })
-
+    
     })
 
 }
 
 readFilesRecursively(process.argv[2], parseRDF)
-//console.log(readFilesRecursively)
