@@ -9,20 +9,22 @@ const mongo = require('mongodb');
 const url = 'mongodb://localhost:27017';
 // Database Name
 const dbName = 'pickoob';
-
+var pageNumber = 1
 let searchField = () => '<form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form> <br>'
+let changePage = (numBotoes) => `<a href="/${pageNumber}">Proxima</a>`
 
 //pesquisa.indexOF()
 
 //DB connection
 mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
-
+  
 
 
 // this example is about the mergeParams option
 
 // make a router with out special options
 var router = Router()
+
 var server = http.createServer(function onRequest(req, res) {
 
   // set something to be passed into the router
@@ -34,7 +36,23 @@ var server = http.createServer(function onRequest(req, res) {
 router.get('/', (req, res) => {
   res.statusCode = 200
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
-
+  //=============== Pegar nome das collections
+  var collectionsName = []
+  //var contagem = 0
+  pageNumber = 1 //ao voltar para a tela inicial deve-se a contagem da pagina deve voltar a 1
+  // client.db(dbName).listCollections().toArray(function(err, info){
+  //   info.forEach(b =>
+  //     {
+  //     //collectionsName.push(b.name)
+  //     console.log(contagem)
+  //     contagem = contagem + client.db(dbName).collection(b.name).countDocuments()
+  //     //contagem.then((data) => console.log(data))
+  //   })
+      
+  //}).then((data) => console.log(data))
+  //console.log(collectionsName[0])
+  //collectionsName.forEach( b => console.log(b + "aaaaaaaaaaaaaaaaaaaaa"))
+  //=============== Pegar nome das collections
   /*
   let books = [
     { id: 1, name: 'alice-in-wonderland' },
@@ -49,26 +67,60 @@ router.get('/', (req, res) => {
   */
 
   res.write(searchField())
+
+
+
+
+  //================================== Pagination Test ==================================
+
+    // let skips = 5;
+
+    // let cursor = client.db(dbName).collection()
+    // let testandoa = client.db(dbName).listCollections();
+    // console.log(testando)
+
+
+
+  //================================== Pagination Test ==================================
   
     // insert book
     //res.write(`<h1>Categories</h1><br>`)
-    client.db(dbName).collection("shelf").find({}).toArray((err, items) => {
+    client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray((err, items) => {
         items.forEach(b => res.write(`<a href="/shelf/${b.name}/${b._id}">${b.name}</a><br>`))
         //res.end()
     })
     //res.write(`<h1>Authors</h1><br>`) esta sendo impresso antes do resultado das consultas...
-    client.db(dbName).collection("author").find({}).toArray((err, items) => {
+    client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray((err, items) => {
       items.forEach(b => res.write(`<a href="/author/${b.name}/${b._id}">${b.name}</a><br>`))
       //res.end()
   })
     //res.write(`<h1>Books</h1><br>`)
-    client.db(dbName).collection("book").find({}).toArray((err, items) => {
+    client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray((err, items) => {
       items.forEach(b => res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`))
+      res.write(changePage(pageNumber))
       res.end()
 })  
 
 
 })
+
+router.get('/:pageNumber', function(req, res) {
+  res.statusCode = 200
+  res.setHeader('Content-type', 'text/html; charset = utf-8')
+  res.write(searchField())
+  console.log("aaaaaaaaaaaa")
+  client.db(dbName).collections("book").find({}).skip((req.params.pageNumber*10)).limit(10).toArray((err, items) => {
+    items.forEach(b => {
+      let finalTitle = b.title.toLowerCase()
+      finalTitle = finalTitle.replace(/\s/g, "-")
+      res.write(`<a href="/book/${finalTitle}/${b._id}">${b.title}</a><br>`)
+    })
+    res.write(changePage(req.params.pageNumber)) //criar botão
+    res.end('lista de livros')
+  })
+   
+})
+
 
 
 router.get('/book', function (req, res) {
