@@ -7,6 +7,8 @@ const querystring = require('querystring')
 // templates
 const wrapper = require('./templates/components/wrapper')
 const bookView = require('./templates/book/view')
+const authorView = require('./templates/author/view')
+const shelfView = require('./templates/shelf/view')
 
 
 const mongo = require('mongodb');
@@ -110,33 +112,6 @@ router.get('/', (req, res) => {
 })
 
 
-
-
-// router.get('/books', function (req, res) {
-//   res.statusCode = 200
-//   pageNumber = 1
-//   res.setHeader('Content-Type', 'text/html; charset=utf-8')
-//   client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
-//     .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
-//     .then(content => {
-//       res.write(wrapper({ content : content + changePageBook(pageNumber) }))
-//       res.end()
-//     })
-// })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 router.get('/page/:pageNumber', function(req, res) {
   res.statusCode = 200
   res.setHeader('Content-type', 'text/html; charset = utf-8')
@@ -219,8 +194,8 @@ router.get('/page/:pageNumber', function(req, res) {
   router.get('/book/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection("book").findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(b => {
-      res.write(bookView(b))
+    client.db(dbName).collection('book').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(bookView(x))
       res.end()
     })
   })
@@ -256,12 +231,11 @@ router.get('/page/:pageNumber', function(req, res) {
   router.get('/shelf/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-res.write(searchField())
-    client.db(dbName).collection("book").findOne({shelf: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-        res.write(`<a href="/shelf/${b.title}/${b._id}">${b.title}</a><br>`)
-        res.end('lista de livros\n')
+    client.db(dbName).collection('shelf').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(shelfView(x))
+      res.end()
     })
-})
+  })
 
 
   router.get('/authors', function (req, res) {
@@ -294,12 +268,11 @@ res.write(searchField())
   router.get('/author/:name/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.write(searchField())
-    client.db(dbName).collection("book").findOne({author: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-        res.write(`<a href="/author/${b.title}/${b._id}">${b.title}</a><br>`)
-        res.end('lista de livros\n')
+    client.db(dbName).collection('author').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(authorView(x))
+      res.end()
     })
-})
+  })
 
     router.get('/search', function (req, res) {
       res.statusCode = 200

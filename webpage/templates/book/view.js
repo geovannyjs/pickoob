@@ -14,7 +14,7 @@ const view = (b) => {
   box-shadow: 0 0 4px #ccc;
   border-radius: 5px;
   padding: 0;
-  position: relative;
+  /*position: relative;*/
   margin: 10px auto;
   background: white url('ajax-loader.gif') center center no-repeat;
   top: calc(50vh - 400px);
@@ -401,12 +401,12 @@ rights: ${b.rights}<br><br>
 
 			$select.appendChild(docfrag);
 
-			$select.onchange = function(){
-					var index = $select.selectedIndex,
-							url = $select.options[index].getAttribute("ref");
-					rendition.display(url);
-					return false;
-			};
+      $select.onchange = function(){
+        var index = $select.selectedIndex,
+          url = $select.options[index].getAttribute("ref");
+        rendition.display(url);
+        return false;
+      };
 
 		});
 
