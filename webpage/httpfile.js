@@ -117,7 +117,7 @@ router.get('/page/:pageNumber', function(req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     client.db(dbName).collection('book').find({}).toArray()
-      .then(items => items.map(x => `<a href="/book/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content }))
         res.end()
