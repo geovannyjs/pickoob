@@ -1,0 +1,71 @@
+html {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#pickoob-header {
+  padding: 20px;
+  background: #dddddd;
+}
+
+#pickoob-header img.logo {
+  margin-right: 20px;
+  vertical-align: middle;
+}
+
+#pickoob-header ul.menu {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  vertical-align: middle;
+}
+
+#pickoob-header ul.menu > li {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+#pickoob-header ul.menu > li > a {
+  display: block;
+  padding: 0 15px;
+  line-height: 30px;
+}
+
+#pickoob-header form.search {
+  display: inline-block;
+  margin-left: 40px;
+}
+
+#pickoob-content {
+  padding: 20px;
+}
+
+#pickoob-footer {
+  padding: 20px;
+  background: #dddddd;
+}
+
+#pickoob-footer ul.menu {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#pickoob-footer ul.menu > li {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+#pickoob-footer ul.menu > li > a {
+  display: block;
+  margin-right: 20px;
+}

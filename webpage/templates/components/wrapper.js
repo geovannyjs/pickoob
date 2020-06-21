@@ -1,10 +1,15 @@
+const menu = require('./menu')
+
 const wrapper = (p) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <title>Pickoob e-reader</title>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+    <link rel="stylesheet" media="screen" href="/static/css/pickoob.css">
 
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -22,20 +27,30 @@ const wrapper = (p) => `
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader">
+    <div id="pickoob-header">
 
-    <a href="/books">Books</a>&nbsp;
-    <a href="/authors">Authors</a>&nbsp;
-    <a href="/shelves">Shelves</a>&nbsp;
+      <img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader" class="logo">
 
-    <form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form>
+      ${menu}
 
-    ${p.content}
+      <form action="/search" class="search">
+        <input type="text" id="search" name="search">
+        <input type="submit" value="Search">
+      </form>
 
-    <div>
-      <a href="/books">Books</a>&nbsp;
-      <a href="/authors">Authors</a>&nbsp;
-      <a href="/shelves">Shelves</a>&nbsp;
+    </div>
+
+    <div id="pickoob-content">
+      ${p.content}
+    </div>
+
+    <div id="pickoob-footer">
+      
+      ${menu}
+
+      <br><br>
+      &copy; 2020 Pickoob e-reader. All Rights Reserved.
+
     </div>
 
   </body>
