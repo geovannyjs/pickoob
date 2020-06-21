@@ -59,13 +59,15 @@ router.get('/', (req, res) => {
   var contagem = 0
   pageNumber = 1 //ao voltar para a tela inicial deve-se a contagem da pagina deve voltar a 1
   client.db(dbName).listCollections().toArray().then(data => {
-    data.forEach(b => client.db(dbName).collection(b.name).count().then(quantity => {
+    data.forEach(b => client.db(dbName).collection(b.name).count().then(quantity => { 
     
       contagem = contagem + quantity
       console.log(contagem)
       return contagem
     }))
   })
+
+  res.write(searchField())
       
 
     client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray()
@@ -190,33 +192,23 @@ router.get('/authors', function (req, res) {
       res.write(searchField())
 
 
-      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
-        items.forEach(b => {
-          let finalTitle = b.title.toLowerCase()
-          finalTitle = finalTitle.replace(/\s/g, "-")
-          res.write(`<a href="/book/${finalTitle}/${b._id}">${b.title}</a><br>`)
-        })
-        
-    })
+      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).toArray()
+      .then(items => items.forEach(b => {
+        b.title = b.title.toLowerCase()
+        res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)})
+      )
 
-    client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
-      items.forEach(b => {
-        let finalTitle = b.name.toLowerCase()
-        finalTitle = finalTitle.replace(/\s/g, "-")
-        res.write(`<a href="/author/${finalTitle}/${b._id}">${b.name}</a><br>`)
-      })
-      
-  })
+    client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
+    .then(items => items.forEach(b => {
+      b.name = b.name.toLowerCase()
+      res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+    )
 
-  client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).toArray((err, items) => {
-    items.forEach(b => {
-      let finalTitle = b.name.toLowerCase()
-      finalTitle = finalTitle.replace(/\s/g, "-")
-      res.write(`<a href="/shelf/${finalTitle}/${b._id}">${b.name}</a><br>`)
-      res.end('lista de livros')
-    })
-
-})
+  client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
+    .then(items => items.forEach(b => {
+      b.name = b.name.toLowerCase()
+      res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+    )
 
 
 
