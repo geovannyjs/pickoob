@@ -11,7 +11,7 @@ const url = 'mongodb://localhost:27017';
 const dbName = 'pickoob';
 var pageNumber = 1
 let searchField = () => '<form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form> <br>'
-let changePage = (numBotoes) => {`<a href="/${++pageNumber}">Proxima</a>`}
+let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
 
 //pesquisa.indexOF()
 
@@ -45,6 +45,7 @@ router.get('/', (req, res) => {
     
       contagem = contagem + quantity
       console.log(contagem)
+      return contagem
     }))
   })
       
@@ -121,28 +122,39 @@ router.get('/', (req, res) => {
       res.end()
     })
 
-
-
 })
 
-router.get('/:pageNumber', function(req, res) {
+router.get('/page/:pageNumber', function(req, res) {
   res.statusCode = 200
   res.setHeader('Content-type', 'text/html; charset = utf-8')
   res.write(searchField())
   console.log(parseInt(req.params.pageNumber) + 1)
-  client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray((err, items) => {
-    console.log("bbbbbbbbbbbbbbbbbbb")
+  client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+  .then(items => {
     items.forEach(b => {
-      let finalTitle = b.title.toLowerCase()
-      finalTitle = finalTitle.replace(/\s/g, "-")
-      res.write(`<a href="/book/${finalTitle}/${b._id}">${b.title}</a><br>`)
-    })
-    res.write(changePage(req.params.pageNumber)) //criar botão
-    res.end('lista de livros')
+    b.name = b.name.toLowerCase()
+    res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
   })
+    }
+  ).then(() => client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
+   .then(items => {
+    items.forEach(b => {
+    b.name = b.name.toLowerCase()
+    res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
+  })
+    })
+   .then(() => client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
+   .then(items => {
+    items.forEach(b => {
+    b.title = b.title.toLowerCase()
+    res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)
+  })
+    })
+   .then(() => res.write(changePage(req.params.pageNumber)))
+   .then(() => res.end())
    
 })
-
+//res.write(changePage(req.params.pageNumber))
 
 
 router.get('/book', function (req, res) {
@@ -151,16 +163,11 @@ router.get('/book', function (req, res) {
     //req.params = {type: ''}
     // with respond with the the params that were passed in
     res.write(searchField())
-    client.db(dbName).collection("book").find({}).toArray((err, items) => {
-        items.forEach(b => {
-          let finalTitle = b.title.toLowerCase()
-          finalTitle = finalTitle.replace(/\s/g, "-")
-          res.write(`<a href="/book/${finalTitle}/${b._id}">${b.title}</a><br>`)})
-        res.end('lista de livros')
-    })
-
-    
-  })
+    client.db(dbName).collection("book").find({}).toArray()
+    .then(items => items.forEach(b => {
+      b.title = b.title.toLowerCase()
+      res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)})
+    )})
 
 router.get('/shelf', function (req, res) {
     res.statusCode = 200
@@ -168,14 +175,11 @@ router.get('/shelf', function (req, res) {
     //req.params = {type: 'lista de categorias'}
 
     res.write(searchField())
-    client.db(dbName).collection("shelf").find({}).toArray((err, items) => {
-        items.forEach(b => {
-
-          let finalName = b.name.toLowerCase()
-          finalName = finalName.replace(/\s/g, "-")
-          res.write(`<a href="/shelf/${finalName}/${b._id}">${b.name}</a><br>`)})
-        res.end('lista de categorias')
-    })
+    client.db(dbName).collection("shelf").find({}).toArray()
+    .then(items => items.forEach(b => {
+      b.name = b.name.toLowerCase()
+      res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+    )
   })
 
 router.get('/author', function (req, res) {
@@ -184,15 +188,11 @@ router.get('/author', function (req, res) {
     //req.params = {type: 'lista de autores'}
 
     res.write(searchField())
-    client.db(dbName).collection("author").find({}).toArray((err, items) => {
-
-        items.forEach(b => {
-
-            let finalName = b.name.toLowerCase()
-            finalName = finalName.replace(/\s/g, "-")
-          res.write(`<a href="/author/${finalName}/${b._id}">${b.name}</a><br>`)})
-        res.end('lista de autores')
-    })
+    client.db(dbName).collection("author").find({}).toArray()
+    .then(items => items.forEach(b => {
+      b.name = b.name.toLowerCase()
+      res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+    )
   })
 
 
