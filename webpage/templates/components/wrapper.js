@@ -22,7 +22,21 @@ const wrapper = (p) => `
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
+    <img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader">
+
+    <a href="/books">Books</a>&nbsp;
+    <a href="/authors">Authors</a>&nbsp;
+    <a href="/shelves">Shelves</a>&nbsp;
+
+    <form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form>
+
     ${p.content}
+
+    <div>
+      <a href="/books">Books</a>&nbsp;
+      <a href="/authors">Authors</a>&nbsp;
+      <a href="/shelves">Shelves</a>&nbsp;
+    </div>
 
   </body>
 </html>
