@@ -22,7 +22,7 @@ const wrapper = (p) => `
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader">
+    <a href="/"><img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader"></a>
 
     <a href="/books">Books</a>&nbsp;
     <a href="/authors">Authors</a>&nbsp;

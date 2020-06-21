@@ -16,6 +16,9 @@ const dbName = 'pickoob';
 var pageNumber = 1
 let searchField = () => '<form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form> <br>'
 let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
+let changePageBook = (currentPage) => `<a href="/books/page/${++currentPage}">Proxima</a>`
+let changePageAuthor = (currentPage) => `<a href="/authors/page/${++currentPage}">Proxima</a>`
+let changePageShelf = (currentPage) => `<a href="/shelves/page/${++currentPage}">Proxima</a>`
 
 //pesquisa.indexOF()
 
@@ -67,85 +70,147 @@ router.get('/', (req, res) => {
     }))
   })
 
-  res.write(searchField())
+  // res.write(searchField())
       
 
-    client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray()
-    .then(items => items.forEach(b => res.write(`<a href="/shelf/${b.name}/${b._id}">${b.name}</a><br>`)))
-    .then(() =>  client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray())
-    .then(items => items.forEach(b => res.write(`<a href="/author/${b.name}/${b._id}">${b.name}</a><br>`)))
-    .then(() =>  client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray())
-    .then(items => items.forEach(b => res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`)))
-    .then(() => {
-      res.write(changePage(pageNumber))
+  //   client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray()
+  //   .then(items => items.forEach(b => res.write(`<a href="/shelf/${b.name}/${b._id}">${b.name}</a><br>`)))
+  //   .then(() =>  client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray())
+  //   .then(items => items.forEach(b => res.write(`<a href="/author/${b.name}/${b._id}">${b.name}</a><br>`)))
+  //   .then(() =>  client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray())
+  //   .then(items => items.forEach(b => res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>`)))
+  //   .then(() => {
+  //     res.write(changePage(pageNumber))
+  //     res.end()
+  //   })
+
+    //==================
+
+    Promise.all([
+      client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray(),
+      client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray(),
+      client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray()
+    ]).then((items) =>{
+      let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+      let Result = firstResult + secondResult + thirdResult
+      return Result
+    })
+    .then(content => {
+      res.write(wrapper({ content : content + changePage(pageNumber) }))      
       res.end()
     })
 
+    //==================
+
 })
+
+
+
+
+// router.get('/books', function (req, res) {
+//   res.statusCode = 200
+//   pageNumber = 1
+//   res.setHeader('Content-Type', 'text/html; charset=utf-8')
+//   client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
+//     .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+//     .then(content => {
+//       res.write(wrapper({ content : content + changePageBook(pageNumber) }))
+//       res.end()
+//     })
+// })
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 router.get('/page/:pageNumber', function(req, res) {
   res.statusCode = 200
   res.setHeader('Content-type', 'text/html; charset = utf-8')
-  res.write(searchField())
+  //res.write(searchField())
   console.log(parseInt(req.params.pageNumber) + 1)
-  client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-  .then(items => {
-    items.forEach(b => {
-    b.name = b.name.toLowerCase()
-    res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
+
+
+
+
+
+  Promise.all([
+    client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray(),
+    client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray(),
+    client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+  ]).then((items) =>{
+    let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+    let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+    let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+    let Result = firstResult + secondResult + thirdResult
+    return Result
   })
-    }
-  ).then(() => client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
-   .then(items => {
-    items.forEach(b => {
-    b.name = b.name.toLowerCase()
-    res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
+  .then(content => {
+    res.write(wrapper({ content : content + changePage(req.params.pageNumber) }))      
+    res.end()
   })
-    })
-   .then(() => client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
-   .then(items => {
-    items.forEach(b => {
-    b.title = b.title.toLowerCase()
-    res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)
-  })
-    })
-   .then(() => res.write(changePage(req.params.pageNumber)))
-   .then(() => res.end())
+
+
+  // client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+  // .then(items => {
+  //   items.forEach(b => {
+  //   b.name = b.name.toLowerCase()
+  //   res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
+  // })
+  //   }
+  // ).then(() => client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
+  //  .then(items => {
+  //   items.forEach(b => {
+  //   b.name = b.name.toLowerCase()
+  //   res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)
+  // })
+  //   })
+  //  .then(() => client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray())
+  //  .then(items => {
+  //   items.forEach(b => {
+  //   b.title = b.title.toLowerCase()
+  //   res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)
+  // })
+  //   })
+  //  .then(() => res.write(changePage(req.params.pageNumber)))
+  //  .then(() => res.end())
    
 })
 
 
   router.get('/books', function (req, res) {
     res.statusCode = 200
+    pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('book').find({}).toArray()
+    client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
       .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
       .then(content => {
-        res.write(wrapper({ content }))
+        res.write(wrapper({ content : content + changePageBook(pageNumber) }))
         res.end()
       })
   })
 
-  router.get('/shelves', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('shelf').find({}).toArray()
-      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => {
-        res.write(wrapper({ content }))
-        res.end()
-      })
-  })
 
-  router.get('/authors', function (req, res) {
+  router.get('/books/page/:pageNumber', function(req, res) {
     res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('author').find({}).toArray()
-      .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => {
-        res.write(wrapper({ content }))
-        res.end()
-      })
+    res.setHeader('Content-type', 'text/html; charset = utf-8')
+    console.log(parseInt(req.params.pageNumber) + 1)
+    client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+    .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+    .then(content => {
+      res.write(wrapper({ content : content + changePageBook(req.params.pageNumber) }))
+      res.end()
+  })
   })
 
   router.get('/book/:title/:id', function (req, res) {
@@ -158,27 +223,81 @@ router.get('/page/:pageNumber', function(req, res) {
     })
   })
 
-    router.get('/shelf/:title/:id', function (req, res) {
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+
+  router.get('/shelves', function (req, res) {
+    res.statusCode = 200
+    pageNumber = 1
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('shelf').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content : content + changePageShelf(pageNumber) }))
+        res.end()
+      })
+  })
+
+
+  router.get('/shelves/page/:pageNumber', function(req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-type', 'text/html; charset = utf-8')
+    //res.write(searchField())
+    console.log(parseInt(req.params.pageNumber) + 1)
+    client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content : content + changePageShelf(req.params.pageNumber) }))
+        res.end()
+    })
+  })
+
+
+  router.get('/shelf/:title/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+res.write(searchField())
+    client.db(dbName).collection("book").findOne({shelf: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
+        res.write(`<a href="/shelf/${b.title}/${b._id}">${b.title}</a><br>`)
+        res.end('lista de livros\n')
+    })
+})
+
+
+  router.get('/authors', function (req, res) {
+    res.statusCode = 200
+    pageNumber = 1
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('author').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content : content + changePageAuthor(pageNumber)}))
+        res.end()
+      })
+  })
+
+
+  router.get('/authors/page/:pageNumber', function(req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-type', 'text/html; charset = utf-8')
+    //res.write(searchField())
+    console.log(parseInt(req.params.pageNumber) + 1)
+    client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+    .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+    .then(content => {
+      res.write(wrapper({ content : content + changePageAuthor(req.params.pageNumber) }))
+      res.end()
+  })
+  })
+
+
+  router.get('/author/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.write(searchField())
-        client.db(dbName).collection("book").findOne({shelf: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-            res.write(`<a href="/shelf/${b.title}/${b._id}">${b.title}</a><br>`)
-            res.end('lista de livros\n')
-        })
+    client.db(dbName).collection("book").findOne({author: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
+        res.write(`<a href="/author/${b.title}/${b._id}">${b.title}</a><br>`)
+        res.end('lista de livros\n')
     })
-
-
-    router.get('/author/:name/:id', function (req, res) {
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'text/html; charset=utf-8')
-        res.write(searchField())
-        client.db(dbName).collection("book").findOne({author: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-            res.write(`<a href="/author/${b.title}/${b._id}">${b.title}</a><br>`)
-            res.end('lista de livros\n')
-        })
-    })
-
+})
 
     router.get('/search', function (req, res) {
       res.statusCode = 200
