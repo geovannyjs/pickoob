@@ -115,42 +115,38 @@ router.get('/page/:pageNumber', function(req, res) {
 })
 
 
-router.get('/books', function (req, res) {
+  router.get('/books', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    // with respond with the the params that were passed in
-    res.write(searchField())
-    client.db(dbName).collection("book").find({}).toArray()
-    .then(items => items.forEach(b => {
-      b.title = b.title.toLowerCase()
-      res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)})
-    )})
-
-router.get('/shelves', function (req, res) {
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  client.db(dbName).collection("shelf").find({}).toArray()
-    .then(items => items.map(s => `<a href="/shelf/${s.name}/${s._id}">${s.name}</a><br>`).join(''))
-    .then(content => {
-      res.write(wrapper({ content }))
-      res.end()
-    })
-
-})
-
-router.get('/authors', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-
-    res.write(searchField())
-    client.db(dbName).collection("author").find({}).toArray()
-    .then(items => items.forEach(b => {
-      b.name = b.name.toLowerCase()
-      res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
-    )
+    client.db(dbName).collection('book').find({}).toArray()
+      .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content }))
+        res.end()
+      })
   })
 
+  router.get('/shelves', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('shelf').find({}).toArray()
+      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content }))
+        res.end()
+      })
+  })
 
+  router.get('/authors', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('author').find({}).toArray()
+      .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content }))
+        res.end()
+      })
+  })
 
   router.get('/book/:title/:id', function (req, res) {
     res.statusCode = 200
