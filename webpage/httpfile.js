@@ -165,7 +165,7 @@ router.get('/:pageNumber', function(req, res) {
 
 
 
-router.get('/book', function (req, res) {
+router.get('/books', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //req.params = {type: ''}
@@ -182,7 +182,7 @@ router.get('/book', function (req, res) {
     
   })
 
-router.get('/shelf', function (req, res) {
+router.get('/shelves', function (req, res) {
   res.statusCode = 200
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
@@ -198,7 +198,7 @@ router.get('/shelf', function (req, res) {
 
 })
 
-router.get('/author', function (req, res) {
+router.get('/authors', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //req.params = {type: 'lista de autores'}
