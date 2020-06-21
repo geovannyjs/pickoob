@@ -1,7 +1,10 @@
 var http         = require('http')
 var Router       = require('router')
 var finalhandler = require('finalhandler')
-const querystring = require('querystring');
+const querystring = require('querystring')
+
+// templates
+const wrapper = require('./templates/components/wrapper')
 
 
 const mongo = require('mongodb');
