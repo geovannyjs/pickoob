@@ -8,6 +8,10 @@ body {
   padding: 0;
 }
 
+a > img {
+  border: none;
+}
+
 #pickoob-header {
   padding: 20px;
   background: #dddddd;

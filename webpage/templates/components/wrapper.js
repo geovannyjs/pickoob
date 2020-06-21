@@ -27,11 +27,13 @@ const wrapper = (p) => `
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <a href="/" title="Pickoob e-reader">
-      <img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader">
-    </a>
+    <div id="pickoob-header">
 
-      <form action="/search" class="search">
+      <a href="/" title="Pickoob e-reader"><img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader" class="logo"></a>
+
+      ${menu}
+
+      <form action="/search" class="search" class="search">
         <input type="text" id="search" name="search">
         <input type="submit" value="Search">
       </form>
