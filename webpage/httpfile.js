@@ -1,3 +1,4 @@
+const fs = require('fs')
 var http         = require('http')
 var Router       = require('router')
 var finalhandler = require('finalhandler')
@@ -29,12 +30,26 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 var router = Router()
 
 var server = http.createServer(function onRequest(req, res) {
-
-  // set something to be passed into the router
-  req.params = { type: 'testando...' }
-
   router(req, res, finalhandler(req, res))
 })
+
+// serving static files for when in dev mode
+// export NODE_ENV=dev
+if(process.env.NODE_ENV === 'dev') {
+  router.get('/static/*', (req, res) => {
+
+    fs.readFile(__dirname + req.url, function (err,data) {
+      if (err) {
+        res.writeHead(404)
+        res.end(JSON.stringify(err))
+        return
+      }
+      res.writeHead(200)
+      res.end(data)
+    })
+
+  })
+}
 
 router.get('/', (req, res) => {
   res.statusCode = 200
@@ -128,6 +143,7 @@ router.get('/', (req, res) => {
 
 })
 
+/*
 router.get('/:pageNumber', function(req, res) {
   res.statusCode = 200
   res.setHeader('Content-type', 'text/html; charset = utf-8')
@@ -145,6 +161,7 @@ router.get('/:pageNumber', function(req, res) {
   })
    
 })
+*/
 
 
 
