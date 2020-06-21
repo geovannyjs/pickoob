@@ -183,20 +183,20 @@ router.get('/book', function (req, res) {
   })
 
 router.get('/shelf', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    //req.params = {type: 'lista de categorias'}
+  res.statusCode = 200
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-    res.write(searchField())
-    client.db(dbName).collection("shelf").find({}).toArray((err, items) => {
-        items.forEach(b => {
-
-          let finalName = b.name.toLowerCase()
-          finalName = finalName.replace(/\s/g, "-")
-          res.write(`<a href="/shelf/${finalName}/${b._id}">${b.name}</a><br>`)})
-        res.end('lista de categorias')
+  /*
+  res.write(searchField())
+  */
+  client.db(dbName).collection("shelf").find({}).toArray()
+    .then(items => items.map(s => `<a href="/shelf/${s.name}/${s._id}">${s.name}</a><br>`).join(''))
+    .then(content => {
+      res.write(wrapper({ content }))
+      res.end()
     })
-  })
+
+})
 
 router.get('/author', function (req, res) {
     res.statusCode = 200
