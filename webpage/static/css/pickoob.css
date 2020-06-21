@@ -6,6 +6,7 @@ html {
 body {
   margin: 0;
   padding: 0;
+  background: #ececec;
 }
 
 a > img {
@@ -14,7 +15,6 @@ a > img {
 
 #pickoob-header {
   padding: 20px;
-  background: #dddddd;
 }
 
 #pickoob-header img.logo {
@@ -49,11 +49,11 @@ a > img {
 
 #pickoob-content {
   padding: 20px;
+  background: #ffffff;
 }
 
 #pickoob-footer {
   padding: 20px;
-  background: #dddddd;
 }
 
 #pickoob-footer ul.menu {

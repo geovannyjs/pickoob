@@ -6,6 +6,7 @@ const querystring = require('querystring')
 
 // templates
 const wrapper = require('./templates/components/wrapper')
+const bookView = require('./templates/book/view')
 
 
 const mongo = require('mongodb');
@@ -216,10 +217,9 @@ router.get('/page/:pageNumber', function(req, res) {
   router.get('/book/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.write(searchField())
-    client.db(dbName).collection("book").findOne({_id: new mongo.ObjectID(req.params.id)}, {}, (err, b) => {
-      res.write(`<a href="/book/${b.title}/${b._id}">${b.title}</a><br>${b.rights}`)
-        res.end('lista de livros\n')
+    client.db(dbName).collection("book").findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(b => {
+      res.write(bookView(b))
+      res.end()
     })
   })
 
