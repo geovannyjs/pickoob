@@ -1,7 +1,11 @@
+const fs = require('fs')
 var http         = require('http')
 var Router       = require('router')
 var finalhandler = require('finalhandler')
-const querystring = require('querystring');
+const querystring = require('querystring')
+
+// templates
+const wrapper = require('./templates/components/wrapper')
 
 
 const mongo = require('mongodb');
@@ -26,12 +30,26 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 var router = Router()
 
 var server = http.createServer(function onRequest(req, res) {
-
-  // set something to be passed into the router
-  req.params = { type: 'testando...' }
-
   router(req, res, finalhandler(req, res))
 })
+
+// serving static files for when in dev mode
+// export NODE_ENV=dev
+if(process.env.NODE_ENV === 'dev') {
+  router.get('/static/*', (req, res) => {
+
+    fs.readFile(__dirname + req.url, function (err,data) {
+      if (err) {
+        res.writeHead(404)
+        res.end(JSON.stringify(err))
+        return
+      }
+      res.writeHead(200)
+      res.end(data)
+    })
+
+  })
+}
 
 router.get('/', (req, res) => {
   res.statusCode = 200
@@ -170,17 +188,20 @@ router.get('/book', function (req, res) {
     )})
 
 router.get('/shelf', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    //req.params = {type: 'lista de categorias'}
+  res.statusCode = 200
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-    res.write(searchField())
-    client.db(dbName).collection("shelf").find({}).toArray()
-    .then(items => items.forEach(b => {
-      b.name = b.name.toLowerCase()
-      res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
-    )
-  })
+  /*
+  res.write(searchField())
+  */
+  client.db(dbName).collection("shelf").find({}).toArray()
+    .then(items => items.map(s => `<a href="/shelf/${s.name}/${s._id}">${s.name}</a><br>`).join(''))
+    .then(content => {
+      res.write(wrapper({ content }))
+      res.end()
+    })
+
+})
 
 router.get('/author', function (req, res) {
     res.statusCode = 200
