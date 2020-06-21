@@ -19,6 +19,8 @@ let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
 let changePageBook = (currentPage) => `<a href="/books/page/${++currentPage}">Proxima</a>`
 let changePageAuthor = (currentPage) => `<a href="/authors/page/${++currentPage}">Proxima</a>`
 let changePageShelf = (currentPage) => `<a href="/shelves/page/${++currentPage}">Proxima</a>`
+let changePageSearch = (currentPage, goal) => `<a href="/search/page/${++currentPage}/${goal}">Proxima</a>`
+let changePageSearchFirst = (currentPage, goal) => `<a href="/search/page/${++currentPage}/${goal}">Proxima</a>`
 
 //pesquisa.indexOF()
 
@@ -304,29 +306,69 @@ res.write(searchField())
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       console.log(Object.values(querystring.parse(req.originalUrl)))
       let searchGoal = Object.values(querystring.parse(req.originalUrl))
-      res.write(searchField())
+      //res.write(searchField())
+      pageNumber = 0
+
+  //     client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).toArray()
+  //     .then(items => items.forEach(b => {
+  //       b.title = b.title.toLowerCase()
+  //       res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)})
+  //     )
+
+  //   client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
+  //   .then(items => items.forEach(b => {
+  //     b.name = b.name.toLowerCase()
+  //     res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+  //   )
+
+  // client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
+  //   .then(items => items.forEach(b => {
+  //     b.name = b.name.toLowerCase()
+  //     res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
+  //   )
 
 
-      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).toArray()
-      .then(items => items.forEach(b => {
-        b.title = b.title.toLowerCase()
-        res.write(`<a href="/book/${b.title.replace(/\s/g,"-")}/${b._id}">${b.title}</a><br>`)})
-      )
-
-    client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
-    .then(items => items.forEach(b => {
-      b.name = b.name.toLowerCase()
-      res.write(`<a href="/author/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
-    )
-
-  client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).toArray()
-    .then(items => items.forEach(b => {
-      b.name = b.name.toLowerCase()
-      res.write(`<a href="/shelf/${b.name.replace(/\s/g,"-")}/${b._id}">${b.name}</a><br>`)})
-    )
-
+    console.log(searchGoal[0])
+    Promise.all([
+      client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
+      client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
+      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray()
+    ]).then((items) =>{
+      let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+      let Result = firstResult + secondResult + thirdResult
+      return Result
+    })
+    .then(content => {
+        res.write(wrapper({ content : content + changePageSearchFirst(pageNumber, searchGoal[0]) }))   
+        res.end()
+    })
 
 
+
+
+
+
+
+
+
+
+  })
+
+
+
+  router.get('/search/page/:pageNumber/:goal', function(req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-type', 'text/html; charset = utf-8')
+    //res.write(searchField())
+    console.log(parseInt(req.params.pageNumber) + 1)
+    client.db(dbName).collection("book").find({name: {$regex: new RegExp(req.params.goal)}}).skip((parseInt(req.params.pageNumber)*10)).limit(10).toArray()
+    .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+    .then(content => {
+      res.write(wrapper({ content : content + changePageSearch(parseInt(req.params.pageNumber),req.params.goal) }))
+      res.end()
+  })
   })
 
 
