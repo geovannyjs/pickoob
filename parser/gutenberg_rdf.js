@@ -4,6 +4,7 @@ const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 const mongo = require('mongodb')
 
 const readFilesRecursively = require('./lib/read-files-recursively')
+const sanitize = require('../lib/string/sanitize')
 
 
 // returns the last element of an array
@@ -55,7 +56,7 @@ const parseRDF = (rdf, next) => {
     }
 
     // book title
-    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value
+    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value.replace(/(\r|\n){1,}/g, ' ')
     // issue date
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/issued') book.issued = o.object.value
     //language
@@ -119,21 +120,34 @@ const parseRDF = (rdf, next) => {
             else if(!x.alias) x.alias = x.name
             return x
           })
+          // add unique field
+          .map(x => {
+            x.unique = sanitize(x.name)
+            return x
+          })
           // convert to an array of Promises of ObjectIds
-          .map(a => insertNoDuplicated(client.db(dbName).collection('author'), { name: a.name }, a))
+          .map(x => insertNoDuplicated(client.db(dbName).collection('author'), { unique: x.unique }, x))
 
         let shelfOIdsPromises = shelf
           // ensure the item is valid
           .filter(x => !!x.name)
+          // add unique field
+          .map(x => {
+            x.unique = sanitize(x.name)
+            return x
+          })
           // convert to an array of Promises of ObjectIds
-          .map(s => insertNoDuplicated(client.db(dbName).collection('shelf'), { name: s.name }, s))
+          .map(x => insertNoDuplicated(client.db(dbName).collection('shelf'), { unique: x.unique }, x))
 
         Promise.all(authorOIdsPromises).then(authorOIds => {
           Promise.all(shelfOIdsPromises).then(shelfOIds => {
+
+            book.unique = sanitize(`${book.title}-${book.issued}`)
+
             book.author = authorOIds
             book.shelf = shelfOIds
 
-            insertNoDuplicated(client.db(dbName).collection('book'), { title: book.title }, book).then(() => {
+            insertNoDuplicated(client.db(dbName).collection('book'), { unique: book.unique }, book).then(() => {
               console.log(`Done processing the file ${rdf}`)
               client.close()
               next()
