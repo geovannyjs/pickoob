@@ -363,6 +363,8 @@ res.write(searchField())
     res.setHeader('Content-type', 'text/html; charset = utf-8')
     //res.write(searchField())
     console.log(parseInt(req.params.pageNumber) + 1)
+    console.log("testeteste")
+    console.log(req.params.goal)
     client.db(dbName).collection("book").find({name: {$regex: new RegExp(req.params.goal)}}).skip((parseInt(req.params.pageNumber)*10)).limit(10).toArray()
     .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
     .then(content => {
