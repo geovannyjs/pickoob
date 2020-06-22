@@ -4,6 +4,8 @@ var Router       = require('router')
 var finalhandler = require('finalhandler')
 const querystring = require('querystring')
 
+const sanitize = require('../lib/string/sanitize')
+
 // templates
 const wrapper = require('./templates/components/wrapper')
 const bookView = require('./templates/book/view')
@@ -17,7 +19,7 @@ const url = 'mongodb://localhost:27017';
 // Database Name
 const dbName = 'pickoob';
 var pageNumber = 1
-let searchField = () => '<form method="get"><input type="text" id="search" name="search"> <input formaction="/search" type="submit" id="searchSub" value="Search"></form> <br>'
+
 let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
 let changePageBook = (currentPage) => `<a href="/books/page/${++currentPage}">Proxima</a>`
 let changePageAuthor = (currentPage) => `<a href="/authors/page/${++currentPage}">Proxima</a>`
@@ -96,9 +98,9 @@ router.get('/', (req, res) => {
       client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray(),
       client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray()
     ]).then((items) =>{
-      let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-      let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-      let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
       let Result = firstResult + secondResult + thirdResult
       return Result
     })
@@ -127,9 +129,9 @@ router.get('/page/:pageNumber', function(req, res) {
     client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray(),
     client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
   ]).then((items) =>{
-    let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-    let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-    let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+    let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+    let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+    let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
     let Result = firstResult + secondResult + thirdResult
     return Result
   })
@@ -171,7 +173,7 @@ router.get('/page/:pageNumber', function(req, res) {
     pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+      .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content : content + changePageBook(pageNumber) }))
         res.end()
@@ -184,7 +186,7 @@ router.get('/page/:pageNumber', function(req, res) {
     res.setHeader('Content-type', 'text/html; charset = utf-8')
     console.log(parseInt(req.params.pageNumber) + 1)
     client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+    .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
     .then(content => {
       res.write(wrapper({ content : content + changePageBook(req.params.pageNumber) }))
       res.end()
@@ -206,7 +208,7 @@ router.get('/page/:pageNumber', function(req, res) {
     pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     client.db(dbName).collection('shelf').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content : content + changePageShelf(pageNumber) }))
         res.end()
@@ -220,7 +222,7 @@ router.get('/page/:pageNumber', function(req, res) {
     //res.write(searchField())
     console.log(parseInt(req.params.pageNumber) + 1)
     client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content : content + changePageShelf(req.params.pageNumber) }))
         res.end()
@@ -243,7 +245,7 @@ router.get('/page/:pageNumber', function(req, res) {
     pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     client.db(dbName).collection('author').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(items => items.map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content : content + changePageAuthor(pageNumber)}))
         res.end()
@@ -257,7 +259,7 @@ router.get('/page/:pageNumber', function(req, res) {
     //res.write(searchField())
     console.log(parseInt(req.params.pageNumber) + 1)
     client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join(''))
+    .then(items => items.map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
     .then(content => {
       res.write(wrapper({ content : content + changePageAuthor(req.params.pageNumber) }))
       res.end()
@@ -307,9 +309,9 @@ router.get('/page/:pageNumber', function(req, res) {
       client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
       client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray()
     ]).then((items) =>{
-      let firstResult = items[0].map(x => `<a href="/shelf/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-      let secondResult = items[1].map(x => `<a href="/author/${x.name}/${x._id}">${x.name}</a><br>`).join('')
-      let thirdResult = items[2].map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join('')
+      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
       let Result = firstResult + secondResult + thirdResult
       return Result
     })
@@ -339,7 +341,7 @@ router.get('/page/:pageNumber', function(req, res) {
     console.log("testeteste")
     console.log(req.params.goal)
     client.db(dbName).collection("book").find({name: {$regex: new RegExp(req.params.goal)}}).skip((parseInt(req.params.pageNumber)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/book/${x.title}/${x._id}">${x.title}</a><br>`).join(''))
+    .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
     .then(content => {
       res.write(wrapper({ content : content + changePageSearch(parseInt(req.params.pageNumber),req.params.goal) }))
       res.end()
