@@ -3,7 +3,7 @@ const fs = require('fs')
 const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 const mongo = require('mongodb')
 
-const readFilesRecursively = require('./lib/read-files-recursively')
+const readFilesRecursively = require('../lib/files/read-files-recursively')
 const sanitize = require('../lib/string/sanitize')
 
 
