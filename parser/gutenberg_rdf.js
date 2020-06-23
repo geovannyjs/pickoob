@@ -31,6 +31,10 @@ const parseRDF = (rdf, next) => {
     author = [{}],
     contributor = [],
     illustrator = [],
+    language = {
+      code: '',
+      name: ''
+    },
     personCapture = null,
     shelf = [],
     shelfCapture = false,
@@ -71,7 +75,7 @@ const parseRDF = (rdf, next) => {
     // issue date
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/issued') book.issued = o.object.value
     //language
-    else if((o.predicate && o.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value') && (o.object.datatype.value === 'http://purl.org/dc/terms/RFC4646')) book.language = o.object.value
+    else if((o.predicate && o.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value') && (o.object.datatype.value === 'http://purl.org/dc/terms/RFC4646')) language.code = o.object.value.toLowerCase()
 
     // bookshelf - init the capture
     else if(o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/bookshelf') shelfCapture = true
@@ -168,16 +172,18 @@ const parseRDF = (rdf, next) => {
         Promise.all([
           Promise.all(authorOIdsPromises),
           Promise.all(shelfOIdsPromises),
-          Promise.all(subjectOIdsPromises)
+          Promise.all(subjectOIdsPromises),
+          insertNoDuplicated(client.db(dbName).collection('language'), { code: language.code }, language)
         ]).then(res => {
 
           let authorOIds, shelfOIds, subjectOIds
 
-          [authorOIds, shelfOIds, subjectOIds] = res
+          [authorOIds, shelfOIds, subjectOIds, languageOId] = res
 
           book.unique = sanitize(`${book.title}-${book.issued}`)
 
           book.author = authorOIds
+          book.language = languageOId
           book.shelf = shelfOIds
           book.subject = subjectOIds
 
