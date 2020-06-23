@@ -1,5 +1,7 @@
 const fs = require('fs')
 
+const R = require('ramda')
+
 const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 const mongo = require('mongodb')
 
@@ -143,6 +145,11 @@ const parseRDF = (rdf, next) => {
             x.unique = sanitize(x.name)
             return x
           })
+          // remove duplicateds
+          .reduce((a, x) => {
+            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
+            return a
+          }, [])
           // convert to an array of Promises of ObjectIds
           .map(x => insertNoDuplicated(client.db(dbName).collection('author'), { unique: x.unique }, x))
 
@@ -154,6 +161,11 @@ const parseRDF = (rdf, next) => {
             x.unique = sanitize(x.name)
             return x
           })
+          // remove duplicateds
+          .reduce((a, x) => {
+            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
+            return a
+          }, [])
           // convert to an array of Promises of ObjectIds
           .map(x => insertNoDuplicated(client.db(dbName).collection('shelf'), { unique: x.unique }, x))
 
@@ -165,6 +177,11 @@ const parseRDF = (rdf, next) => {
             x.unique = sanitize(x.name)
             return x
           })
+          // remove duplicateds
+          .reduce((a, x) => {
+            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
+            return a
+          }, [])
           // convert to an array of Promises of ObjectIds
           .map(x => insertNoDuplicated(client.db(dbName).collection('subject'), { unique: x.unique }, x))
 
