@@ -8,22 +8,6 @@ const view = (b) => {
 
 <style>
 
-#viewer.spreads {
-  width: 900px;
-  height: 600px;
-  box-shadow: 0 0 4px #ccc;
-  border-radius: 5px;
-  padding: 0;
-  /*position: relative;*/
-  margin: 10px auto;
-  background: white url('ajax-loader.gif') center center no-repeat;
-  top: calc(50vh - 400px);
-}
-
-#viewer.spreads .epub-view > iframe {
-    background: white;
-}
-
 #viewer.scrolled {
   overflow: hidden;
   width: 800px;
@@ -58,24 +42,6 @@ const view = (b) => {
 }
 
 @media (min-width: 1000px) {
-  #viewer.spreads:after {
-    position: absolute;
-    width: 1px;
-    border-right: 1px #000 solid;
-    height: 90%;
-    z-index: 1;
-    left: 50%;
-    margin-left: -1px;
-    top: 5%;
-    opacity: .15;
-    box-shadow: -2px 0 15px rgba(0, 0, 0, 1);
-    content:  "";
-  }
-
-  #viewer.spreads.single:after {
-    display: none;
-  }
-
   #prev {
     left: 40px;
   }
@@ -271,6 +237,7 @@ svg {
 
 </style>
 
+<img src="/static/content/1/pg1.cover.medium.jpg">
 <h1>${b.title}</h1>
 issued: ${b.issued}<br>
 rights: ${b.rights}<br><br>

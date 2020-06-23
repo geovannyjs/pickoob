@@ -8,7 +8,10 @@ const sanitize = require('../lib/string/sanitize')
 
 // templates
 const wrapper = require('./templates/components/wrapper')
+
+const bookList = require('./templates/book/list')
 const bookView = require('./templates/book/view')
+
 const authorView = require('./templates/author/view')
 const languageView = require('./templates/language/view')
 const shelfView = require('./templates/shelf/view')
@@ -126,9 +129,16 @@ router.get('/page/:pageNumber', function(req, res) {
     pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
+      /*
       .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
       .then(content => {
         res.write(wrapper({ content : content + changePageBook(pageNumber) }))
+        res.end()
+      })
+      */
+      .then(items => {
+        // FIXME remove this paging stuff
+        res.write(bookList({ books: items, paging: changePageBook(pageNumber) }))
         res.end()
       })
   })
