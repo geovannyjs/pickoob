@@ -264,6 +264,29 @@ router.get('/page/:pageNumber', function(req, res) {
   })
   })
 
+  router.get('/subjects', function (req, res) {
+    res.statusCode = 200
+    pageNumber = 1
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('subject').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/subject/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content : content + changePageAuthor(pageNumber)}))
+        res.end()
+      })
+  })
+
+  router.get('/languages', function (req, res) {
+    res.statusCode = 200
+    pageNumber = 1
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('language').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/language/${sanitize(x.code)}/${x._id}">${x.code}</a><br>`).join(''))
+      .then(content => {
+        res.write(wrapper({ content : content + changePageAuthor(pageNumber)}))
+        res.end()
+      })
+  })
 
 
 // make our http server listen to connections
