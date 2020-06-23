@@ -276,7 +276,7 @@ issued: ${b.issued}<br>
 rights: ${b.rights}<br><br>
 
 <select id="toc"></select>
-<div id="viewer" class="spreads"></div>
+<div id="viewer" class="scrolled"></div>
 <a id="prev" href="#prev" class="arrow">‹</a>
 <a id="next" href="#next" class="arrow">›</a>
 
@@ -288,9 +288,8 @@ rights: ${b.rights}<br><br>
   // Load the opf
   var book = ePub(url || "https://s3.amazonaws.com/moby-dick/moby-dick.epub");
   var rendition = book.renderTo("viewer", {
-    width: "100%",
-    height: 600,
-    spread: "always"
+    flow: "scrolled-doc",
+    height: '600px'
   });
 
   rendition.display(currentSectionIndex);
