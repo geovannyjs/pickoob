@@ -31,8 +31,11 @@ const parseRDF = (rdf, next) => {
     author = [{}],
     contributor = [],
     illustrator = [],
+    personCapture = null,
     shelf = [],
-    shelfCapture = false
+    shelfCapture = false,
+    subject = [],
+    subjectCapture = false
 
 
   const gather = (o) => {
@@ -54,6 +57,14 @@ const parseRDF = (rdf, next) => {
         shelfCapture = false
       }
     }
+    // we are in subject capture mode
+    else if(subjectCapture) {
+      if(o.predicate.value != 'http://purl.org/dc/dcam/memberOf') {
+        // LoC class is just 2 chars, so we ignore it
+        if(o.object.value.length > 2) subject.push({ name: o.object.value })
+        subjectCapture = false
+      }
+    }
 
     // book title
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value.replace(/(\r|\n){1,}/g, ' ')
@@ -64,6 +75,9 @@ const parseRDF = (rdf, next) => {
 
     // bookshelf - init the capture
     else if(o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/bookshelf') shelfCapture = true
+
+    // subject - init the capture
+    else if(o.predicate.value === 'http://purl.org/dc/terms/subject') subjectCapture = true
 
     //rights
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/rights') book.rights = o.object.value
@@ -139,21 +153,40 @@ const parseRDF = (rdf, next) => {
           // convert to an array of Promises of ObjectIds
           .map(x => insertNoDuplicated(client.db(dbName).collection('shelf'), { unique: x.unique }, x))
 
-        Promise.all(authorOIdsPromises).then(authorOIds => {
-          Promise.all(shelfOIdsPromises).then(shelfOIds => {
-
-            book.unique = sanitize(`${book.title}-${book.issued}`)
-
-            book.author = authorOIds
-            book.shelf = shelfOIds
-
-            insertNoDuplicated(client.db(dbName).collection('book'), { unique: book.unique }, book).then(() => {
-              console.log(`Done processing the file ${rdf}`)
-              client.close()
-              next()
-            })
-
+        let subjectOIdsPromises = subject
+          // ensure the item is valid
+          .filter(x => !!x.name)
+          // add unique field
+          .map(x => {
+            x.unique = sanitize(x.name)
+            return x
           })
+          // convert to an array of Promises of ObjectIds
+          .map(x => insertNoDuplicated(client.db(dbName).collection('subject'), { unique: x.unique }, x))
+
+
+        Promise.all([
+          Promise.all(authorOIdsPromises),
+          Promise.all(shelfOIdsPromises),
+          Promise.all(subjectOIdsPromises)
+        ]).then(res => {
+
+          let authorOIds, shelfOIds, subjectOIds
+
+          [authorOIds, shelfOIds, subjectOIds] = res
+
+          book.unique = sanitize(`${book.title}-${book.issued}`)
+
+          book.author = authorOIds
+          book.shelf = shelfOIds
+          book.subject = subjectOIds
+
+          insertNoDuplicated(client.db(dbName).collection('book'), { unique: book.unique }, book).then(() => {
+            console.log(`Done processing the file ${rdf}`)
+            client.close()
+            next()
+          })
+
         })
 
       })
