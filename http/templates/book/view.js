@@ -237,10 +237,17 @@ svg {
 
 </style>
 
-<img src="/static/content/1/pg1.cover.medium.jpg">
-<h1>${b.title}</h1>
-issued: ${b.issued}<br>
-rights: ${b.rights}<br><br>
+<div class="pure-g">
+  <div class="pure-u-1-5">
+    <img src="/static/content/1/pg1.cover.medium.jpg">
+    <br>
+    issued: ${b.issued}<br>
+    rights: ${b.rights}
+  </div>
+  <div class="pure-u-4-5">
+    <h1>${b.title}</h1>
+  </div>
+</div>
 
 <select id="toc"></select>
 <div id="viewer" class="scrolled"></div>

@@ -13,6 +13,9 @@ const wrapper = (p) => `
     <!-- <link rel="shortcut icon" type="image/png" href="images/favicon.png"> -->
     <link rel="stylesheet" media="screen" href="/static/css/pickoob.css">
 
+    <link rel="stylesheet" href="/static/css/purecss/pure-min.css">
+    <link rel="stylesheet" href="/static/css/purecss/grids-responsive-min.css">
+
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
