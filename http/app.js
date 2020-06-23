@@ -10,7 +10,9 @@ const sanitize = require('../lib/string/sanitize')
 const wrapper = require('./templates/components/wrapper')
 const bookView = require('./templates/book/view')
 const authorView = require('./templates/author/view')
+const languageView = require('./templates/language/view')
 const shelfView = require('./templates/shelf/view')
+const subjectView = require('./templates/subject/view')
 
 
 const mongo = require('mongodb');
@@ -276,6 +278,15 @@ router.get('/page/:pageNumber', function(req, res) {
       })
   })
 
+  router.get('/subject/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('subject').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(subjectView(x))
+      res.end()
+    })
+  })
+
   router.get('/languages', function (req, res) {
     res.statusCode = 200
     pageNumber = 1
@@ -286,6 +297,15 @@ router.get('/page/:pageNumber', function(req, res) {
         res.write(wrapper({ content : content + changePageAuthor(pageNumber)}))
         res.end()
       })
+  })
+
+  router.get('/language/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('language').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(languageView(x))
+      res.end()
+    })
   })
 
 
