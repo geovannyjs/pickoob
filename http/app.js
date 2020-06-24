@@ -87,8 +87,8 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
     //=============== Pegar nome das collections
     var contagem = 0
     pageNumber = 1 //ao voltar para a tela inicial deve-se a contagem da pagina deve voltar a 1
-    client.db(dbName).listCollections().toArray().then(data => {
-      data.forEach(b => client.db(dbName).collection(b.name).count().then(quantity => { 
+    db.listCollections().toArray().then(data => {
+      data.forEach(b => db.collection(b.name).count().then(quantity => { 
       
         contagem = contagem + quantity
         console.log(contagem)
