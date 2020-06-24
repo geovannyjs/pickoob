@@ -40,11 +40,6 @@ const buildPaging = (col, req) => col.countDocuments().then(count => {
   }
 })
 
-var pageNumber = 1
-
-let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
-let changePageSearchFirst = (currentPage, goal) => `<a href="/search/page/${++currentPage}/${goal}">Proxima</a>`
-
 
 //DB connection
 mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }, (err, client) => {
@@ -84,22 +79,11 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
   router.get('/', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    //=============== Pegar nome das collections
-    var contagem = 0
-    pageNumber = 1 //ao voltar para a tela inicial deve-se a contagem da pagina deve voltar a 1
-    db.listCollections().toArray().then(data => {
-      data.forEach(b => db.collection(b.name).count().then(quantity => { 
-      
-        contagem = contagem + quantity
-        console.log(contagem)
-        return contagem
-      }))
-    })
 
     Promise.all([
-      shelfColl.find({}).skip(0).limit(10).toArray(),
-      authorColl.find({}).skip(0).limit(10).toArray(),
-      bookColl.find({}).skip(0).limit(10).toArray()
+      shelfColl.find({}).limit(10).toArray(),
+      authorColl.find({}).limit(10).toArray(),
+      bookColl.find({}).limit(10).toArray()
     ]).then((items) =>{
       let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
       let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
@@ -107,7 +91,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
       let Result = firstResult + secondResult + thirdResult
       return Result
     })
-    .then(content => res.end(wrapper({ content : content + changePage(pageNumber) })))
+    .then(content => res.end(wrapper({ content })))
 
   })
 
@@ -124,7 +108,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     authorColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-    .then(x => res.end(authorView(x)))
+      .then(x => res.end(authorView(x)))
   })
 
   router.get('/books', function (req, res) {
@@ -156,7 +140,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     languageColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-    .then(x => res.end(languageView(x)))
+      .then(x => res.end(languageView(x)))
   })
 
   router.get('/shelves', function (req, res) {
@@ -171,10 +155,8 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
   router.get('/shelf/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    shelfColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
-      res.write(shelfView(x))
-      res.end()
-    })
+    shelfColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+      .then(x => res.end(shelfView(x)))
   })
 
   router.get('/subjects', function (req, res) {
@@ -196,15 +178,13 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
   router.get('/search', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    console.log(Object.values(querystring.parse(req.originalUrl)))
-    let searchGoal = Object.values(querystring.parse(req.originalUrl))
 
-    pageNumber = 0
+    let searchGoal = queryStringAsObject(req).search || ''
 
     Promise.all([
-      shelfColl.find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
-      authorColl.find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
-      bookColl.find({title: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray()
+      shelfColl.find({name: {$regex: new RegExp(searchGoal)}}).limit(10).toArray(),
+      authorColl.find({name: {$regex: new RegExp(searchGoal)}}).limit(10).toArray(),
+      bookColl.find({title: {$regex: new RegExp(searchGoal)}}).limit(10).toArray()
     ]).then((items) =>{
       let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
       let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
@@ -212,24 +192,9 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
       let Result = firstResult + secondResult + thirdResult
       return Result
     })
-    .then(content => res.end(wrapper({ content : content + changePageSearchFirst(pageNumber, searchGoal[0]) })))
+    .then(content => res.end(wrapper({ content })))
 
   })
-
-
-  /*
-  router.get('/search/page/:pageNumber/:goal', function(req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-type', 'text/html; charset = utf-8')
-
-    client.db(dbName).collection("book").find({name: {$regex: new RegExp(req.params.goal)}}).skip((parseInt(req.params.pageNumber)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
-    .then(content => {
-      res.write(wrapper({ content : content + changePageSearch(parseInt(req.params.pageNumber),req.params.goal) }))
-      res.end()
-  })
-  })
-  */
 
   // make our http server listen to connections
   server.listen(8080)
