@@ -20,6 +20,7 @@ const languageView = require('./templates/language/view')
 const shelfList = require('./templates/shelf/list')
 const shelfView = require('./templates/shelf/view')
 
+const subjectList = require('./templates/subject/list')
 const subjectView = require('./templates/subject/view')
 
 
@@ -127,32 +128,14 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
       .then(x => res.end(bookView(x)))
   })
 
-
   router.get('/shelves', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    /*
-    client.db(dbName).collection('shelf').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageShelf(pageNumber) })))
-    */
     buildPaging(client.db(dbName).collection('shelf'), req).then(paging => {
       client.db(dbName).collection('shelf').find({}).skip(paging.skip).limit(paging.limit).toArray()
         .then(shelves => res.end(shelfList({ shelves, paging })))
     })
   })
-
-
-/*
-  router.get('/shelves/page/:pageNumber', function(req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-type', 'text/html; charset = utf-8')
-
-    client.db(dbName).collection("shelf").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageShelf(req.params.pageNumber) })))
-  })
-*/
 
   router.get('/shelf/:title/:id', function (req, res) {
     res.statusCode = 200
@@ -162,7 +145,6 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
       res.end()
     })
   })
-
 
   router.get('/authors', function (req, res) {
     res.statusCode = 200
@@ -180,13 +162,45 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
     .then(x => res.end(authorView(x)))
   })
 
-    router.get('/search', function (req, res) {
-      res.statusCode = 200
-      res.setHeader('Content-Type', 'text/html; charset=utf-8')
-      console.log(Object.values(querystring.parse(req.originalUrl)))
-      let searchGoal = Object.values(querystring.parse(req.originalUrl))
+  router.get('/subjects', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    buildPaging(client.db(dbName).collection('subject'), req).then(paging => {
+      client.db(dbName).collection('subject').find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(subjects => res.end(subjectList({ subjects, paging })))
+    })
+  })
 
-      pageNumber = 0
+  router.get('/subject/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('subject').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+      .then(x => res.end(subjectView(x)))
+  })
+
+  router.get('/languages', function (req, res) {
+    res.statusCode = 200
+    pageNumber = 1
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('language').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
+      .then(items => items.map(x => `<a href="/language/${sanitize(x.code)}/${x._id}">${x.code}</a><br>`).join(''))
+      .then(content => res.end(wrapper({ content : content + changePageAuthor(pageNumber)})))
+  })
+
+  router.get('/language/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    client.db(dbName).collection('language').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    .then(x => res.end(languageView(x)))
+  })
+
+  router.get('/search', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    console.log(Object.values(querystring.parse(req.originalUrl)))
+    let searchGoal = Object.values(querystring.parse(req.originalUrl))
+
+    pageNumber = 0
 
     Promise.all([
       client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
@@ -217,39 +231,6 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
   })
   })
   */
-
-  router.get('/subjects', function (req, res) {
-    res.statusCode = 200
-    pageNumber = 1
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('subject').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/subject/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageAuthor(pageNumber)})))
-  })
-
-  router.get('/subject/:name/:id', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('subject').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-      .then(x => res.end(subjectView(x)))
-  })
-
-  router.get('/languages', function (req, res) {
-    res.statusCode = 200
-    pageNumber = 1
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('language').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/language/${sanitize(x.code)}/${x._id}">${x.code}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageAuthor(pageNumber)})))
-  })
-
-  router.get('/language/:name/:id', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('language').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-    .then(x => res.end(languageView(x)))
-  })
-
 
   // make our http server listen to connections
   server.listen(8080)
