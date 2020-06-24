@@ -12,7 +12,9 @@ const wrapper = require('./templates/components/wrapper')
 const bookList = require('./templates/book/list')
 const bookView = require('./templates/book/view')
 
+const authorList = require('./templates/author/list')
 const authorView = require('./templates/author/view')
+
 const languageView = require('./templates/language/view')
 const shelfView = require('./templates/shelf/view')
 const subjectView = require('./templates/subject/view')
@@ -21,11 +23,11 @@ const subjectView = require('./templates/subject/view')
 // functions
 const queryStringAsObject = (req) => querystring.parse(req.url.split(/\?/)[1])
 
-const buildPaging = (c, r) => c.countDocuments().then(co => {
-  let page = parseInt(queryStringAsObject(r).page) || 1
+const buildPaging = (col, req) => col.countDocuments().then(count => {
+  let page = parseInt(queryStringAsObject(req).page) || 1
   return {
     page,
-    rows: co,
+    rows: count,
     limit: 10,
     skip: (page - 1) * 10
   }
@@ -109,12 +111,10 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
   router.get('/books', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-
     buildPaging(client.db(dbName).collection('book'), req).then(paging => {
       client.db(dbName).collection('book').find({}).skip(paging.skip).limit(paging.limit).toArray()
         .then(books => res.end(bookList({ books, paging })))
     })
-      
   })
 
   router.get('/book/:title/:id', function (req, res) {
@@ -157,22 +157,12 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
   router.get('/authors', function (req, res) {
     res.statusCode = 200
-    pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('author').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageAuthor(pageNumber)})))
+    buildPaging(client.db(dbName).collection('author'), req).then(paging => {
+      client.db(dbName).collection('author').find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(authors => res.end(authorList({ authors, paging })))
+    })
   })
-
-
-  router.get('/authors/page/:pageNumber', function(req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-type', 'text/html; charset = utf-8')
-    client.db(dbName).collection("author").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
-    .then(content => res.end(wrapper({ content : content + changePageAuthor(req.params.pageNumber) })))
-  })
-
 
   router.get('/author/:name/:id', function (req, res) {
     res.statusCode = 200
