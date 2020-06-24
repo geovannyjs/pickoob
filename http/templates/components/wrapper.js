@@ -10,7 +10,7 @@ const wrapper = (p) => `
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- <link rel="shortcut icon" type="image/png" href="images/favicon.png"> -->
+    <link rel="shortcut icon" type="image/png" href="/static/images/favicon.ico">
     <link rel="stylesheet" media="screen" href="/static/css/pickoob.css">
 
     <link rel="stylesheet" href="/static/css/purecss/pure-min.css">
