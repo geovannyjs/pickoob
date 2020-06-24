@@ -18,6 +18,19 @@ const shelfView = require('./templates/shelf/view')
 const subjectView = require('./templates/subject/view')
 
 
+// functions
+const queryStringAsObject = (req) => querystring.parse(req.url.split(/\?/)[1])
+
+const buildPaging = (c, r) => c.countDocuments().then(co => {
+  let page = parseInt(queryStringAsObject(r).page) || 1
+  return {
+    page,
+    rows: co,
+    limit: 10,
+    skip: (page - 1) * 10
+  }
+})
+
 const mongo = require('mongodb');
 // Connection url
 const url = 'mongodb://localhost:27017';
@@ -26,7 +39,6 @@ const dbName = 'pickoob';
 var pageNumber = 1
 
 let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
-let changePageBook = (currentPage) => `<a href="/books/page/${++currentPage}">Proxima</a>`
 let changePageAuthor = (currentPage) => `<a href="/authors/page/${++currentPage}">Proxima</a>`
 let changePageShelf = (currentPage) => `<a href="/shelves/page/${++currentPage}">Proxima</a>`
 let changePageSearchFirst = (currentPage, goal) => `<a href="/search/page/${++currentPage}/${goal}">Proxima</a>`
@@ -68,7 +80,6 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     //=============== Pegar nome das collections
-    var collectionsName = []
     var contagem = 0
     pageNumber = 1 //ao voltar para a tela inicial deve-se a contagem da pagina deve voltar a 1
     client.db(dbName).listCollections().toArray().then(data => {
@@ -97,20 +108,13 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
   router.get('/books', function (req, res) {
     res.statusCode = 200
-    pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('book').find({}).skip(0).limit(10).toArray()
-      .then(items => res.end(bookList({ books: items, paging: changePageBook(pageNumber) })))
-  })
 
-
-  router.get('/books/page/:pageNumber', function(req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-type', 'text/html; charset = utf-8')
-    console.log(parseInt(req.params.pageNumber) + 1)
-    client.db(dbName).collection("book").find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-    .then(items => items.map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join(''))
-    .then(content => res.end(wrapper({ content : content + changePageBook(req.params.pageNumber) })))
+    buildPaging(client.db(dbName).collection('book'), req).then(paging => {
+      client.db(dbName).collection('book').find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(books => res.end(bookList({ books, paging })))
+    })
+      
   })
 
   router.get('/book/:title/:id', function (req, res) {

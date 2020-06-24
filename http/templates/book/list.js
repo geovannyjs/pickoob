@@ -11,7 +11,7 @@ const list = (p) => {
     <br>
     <a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a>
   </div>
-  `).join('') + '</div>' + p.paging
+  `).join('') + '</div>' + `<br><br><a href="/books?page=${p.paging.page + 1}">Proxima</a>`
 
   return wrapper({ content })
 }
