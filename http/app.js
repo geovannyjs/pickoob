@@ -15,6 +15,7 @@ const bookView = require('./templates/book/view')
 const authorList = require('./templates/author/list')
 const authorView = require('./templates/author/view')
 
+const languageList = require('./templates/language/list')
 const languageView = require('./templates/language/view')
 
 const shelfList = require('./templates/shelf/list')
@@ -45,18 +46,12 @@ const dbName = 'pickoob';
 var pageNumber = 1
 
 let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
-let changePageAuthor = (currentPage) => `<a href="/authors/page/${++currentPage}">Proxima</a>`
-let changePageShelf = (currentPage) => `<a href="/shelves/page/${++currentPage}">Proxima</a>`
 let changePageSearchFirst = (currentPage, goal) => `<a href="/search/page/${++currentPage}/${goal}">Proxima</a>`
 
 
 //DB connection
 mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
   
-
-
-  // this example is about the mergeParams option
-
   // make a router with out special options
   var router = Router()
 
@@ -180,11 +175,11 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
   router.get('/languages', function (req, res) {
     res.statusCode = 200
-    pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('language').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
-      .then(items => items.map(x => `<a href="/language/${sanitize(x.code)}/${x._id}">${x.code}</a><br>`).join(''))
-      .then(content => res.end(wrapper({ content : content + changePageAuthor(pageNumber)})))
+    buildPaging(client.db(dbName).collection('language'), req).then(paging => {
+      client.db(dbName).collection('language').find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(languages => res.end(languageList({ languages, paging })))
+    })
   })
 
   router.get('/language/:name/:id', function (req, res) {
