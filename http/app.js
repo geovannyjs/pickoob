@@ -16,7 +16,10 @@ const authorList = require('./templates/author/list')
 const authorView = require('./templates/author/view')
 
 const languageView = require('./templates/language/view')
+
+const shelfList = require('./templates/shelf/list')
 const shelfView = require('./templates/shelf/view')
+
 const subjectView = require('./templates/subject/view')
 
 
@@ -127,14 +130,20 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
 
   router.get('/shelves', function (req, res) {
     res.statusCode = 200
-    pageNumber = 1
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    /*
     client.db(dbName).collection('shelf').find({}).skip(((parseInt(req.params.pageNumber) - 1)*10)).limit(10).toArray()
       .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
       .then(content => res.end(wrapper({ content : content + changePageShelf(pageNumber) })))
+    */
+    buildPaging(client.db(dbName).collection('shelf'), req).then(paging => {
+      client.db(dbName).collection('shelf').find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(shelves => res.end(shelfList({ shelves, paging })))
+    })
   })
 
 
+/*
   router.get('/shelves/page/:pageNumber', function(req, res) {
     res.statusCode = 200
     res.setHeader('Content-type', 'text/html; charset = utf-8')
@@ -143,7 +152,7 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
       .then(items => items.map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join(''))
       .then(content => res.end(wrapper({ content : content + changePageShelf(req.params.pageNumber) })))
   })
-
+*/
 
   router.get('/shelf/:title/:id', function (req, res) {
     res.statusCode = 200
