@@ -4,6 +4,8 @@ const Router = require('router')
 const finalhandler = require('finalhandler')
 const querystring = require('querystring')
 
+const mongo = require('mongodb')
+
 const sanitize = require('../lib/string/sanitize')
 
 // templates
@@ -38,11 +40,6 @@ const buildPaging = (col, req) => col.countDocuments().then(count => {
   }
 })
 
-const mongo = require('mongodb');
-// Connection url
-const url = 'mongodb://localhost:27017';
-// Database Name
-const dbName = 'pickoob';
 var pageNumber = 1
 
 let changePage = (currentPage) => `<a href="/page/${++currentPage}">Proxima</a>`
@@ -50,8 +47,15 @@ let changePageSearchFirst = (currentPage, goal) => `<a href="/search/page/${++cu
 
 
 //DB connection
-mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
+mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }, (err, client) => {
   
+  const db = client.db('pickoob')
+  const authorColl = db.collection('author')
+  const bookColl = db.collection('book')
+  const languageColl = db.collection('language')
+  const shelfColl = db.collection('shelf')
+  const subjectColl = db.collection('subject')
+
   // make a router with out special options
   var router = Router()
 
@@ -65,13 +69,13 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
     router.get('/static/*', (req, res) => {
 
       fs.readFile(__dirname + req.url, function (err,data) {
-        if (err) {
+        if(err) {
           res.writeHead(404)
           res.end(JSON.stringify(err))
-          return
+        } else {
+          res.writeHead(200)
+          res.end(data)
         }
-        res.writeHead(200)
-        res.end(data)
       })
 
     })
@@ -92,60 +96,26 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
       }))
     })
 
-      Promise.all([
-        client.db(dbName).collection("shelf").find({}).skip(0).limit(10).toArray(),
-        client.db(dbName).collection("author").find({}).skip(0).limit(10).toArray(),
-        client.db(dbName).collection("book").find({}).skip(0).limit(10).toArray()
-      ]).then((items) =>{
-        let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-        let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-        let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
-        let Result = firstResult + secondResult + thirdResult
-        return Result
-      })
-      .then(content => res.end(wrapper({ content : content + changePage(pageNumber) })))
-
-  })
-
-  router.get('/books', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(client.db(dbName).collection('book'), req).then(paging => {
-      client.db(dbName).collection('book').find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(books => res.end(bookList({ books, paging })))
+    Promise.all([
+      shelfColl.find({}).skip(0).limit(10).toArray(),
+      authorColl.find({}).skip(0).limit(10).toArray(),
+      bookColl.find({}).skip(0).limit(10).toArray()
+    ]).then((items) =>{
+      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
+      let Result = firstResult + secondResult + thirdResult
+      return Result
     })
-  })
+    .then(content => res.end(wrapper({ content : content + changePage(pageNumber) })))
 
-  router.get('/book/:title/:id', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('book').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-      .then(x => res.end(bookView(x)))
-  })
-
-  router.get('/shelves', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(client.db(dbName).collection('shelf'), req).then(paging => {
-      client.db(dbName).collection('shelf').find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(shelves => res.end(shelfList({ shelves, paging })))
-    })
-  })
-
-  router.get('/shelf/:title/:id', function (req, res) {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('shelf').findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
-      res.write(shelfView(x))
-      res.end()
-    })
   })
 
   router.get('/authors', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(client.db(dbName).collection('author'), req).then(paging => {
-      client.db(dbName).collection('author').find({}).skip(paging.skip).limit(paging.limit).toArray()
+    buildPaging(authorColl, req).then(paging => {
+      authorColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
         .then(authors => res.end(authorList({ authors, paging })))
     })
   })
@@ -153,31 +123,31 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
   router.get('/author/:name/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('author').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    authorColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
     .then(x => res.end(authorView(x)))
   })
 
-  router.get('/subjects', function (req, res) {
+  router.get('/books', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(client.db(dbName).collection('subject'), req).then(paging => {
-      client.db(dbName).collection('subject').find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(subjects => res.end(subjectList({ subjects, paging })))
+    buildPaging(bookColl, req).then(paging => {
+      bookColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(books => res.end(bookList({ books, paging })))
     })
   })
 
-  router.get('/subject/:name/:id', function (req, res) {
+  router.get('/book/:title/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('subject').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
-      .then(x => res.end(subjectView(x)))
+    bookColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+      .then(x => res.end(bookView(x)))
   })
 
   router.get('/languages', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(client.db(dbName).collection('language'), req).then(paging => {
-      client.db(dbName).collection('language').find({}).skip(paging.skip).limit(paging.limit).toArray()
+    buildPaging(languageColl, req).then(paging => {
+      languageColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
         .then(languages => res.end(languageList({ languages, paging })))
     })
   })
@@ -185,8 +155,42 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
   router.get('/language/:name/:id', function (req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    client.db(dbName).collection('language').findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    languageColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
     .then(x => res.end(languageView(x)))
+  })
+
+  router.get('/shelves', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    buildPaging(shelfColl, req).then(paging => {
+      shelfColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(shelves => res.end(shelfList({ shelves, paging })))
+    })
+  })
+
+  router.get('/shelf/:title/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    shelfColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {}).then(x => {
+      res.write(shelfView(x))
+      res.end()
+    })
+  })
+
+  router.get('/subjects', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    buildPaging(subjectColl, req).then(paging => {
+      subjectColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
+        .then(subjects => res.end(subjectList({ subjects, paging })))
+    })
+  })
+
+  router.get('/subject/:name/:id', function (req, res) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    subjectColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+      .then(x => res.end(subjectView(x)))
   })
 
   router.get('/search', function (req, res) {
@@ -198,9 +202,9 @@ mongo.MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
     pageNumber = 0
 
     Promise.all([
-      client.db(dbName).collection("shelf").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
-      client.db(dbName).collection("author").find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
-      client.db(dbName).collection("book").find({title: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray()
+      shelfColl.find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
+      authorColl.find({name: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray(),
+      bookColl.find({title: {$regex: new RegExp(searchGoal)}}).skip(parseInt(pageNumber) * 10).limit(10).toArray()
     ]).then((items) =>{
       let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
       let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
