@@ -249,10 +249,13 @@ svg {
   </div>
 </div>
 
-<select id="toc"></select>
-<div id="viewer" class="scrolled"></div>
-<a id="prev" href="#prev" class="arrow">‹</a>
-<a id="next" href="#next" class="arrow">›</a>
+<div id="wait" style="text-align:center;font-size:32px;">Please wait, loading the book into the reader...</div>
+<div id="reader" style="display:none">
+  <select id="toc"></select>
+  <div id="viewer" class="scrolled"></div>
+  <a id="prev" href="#prev" class="arrow">‹</a>
+  <a id="next" href="#next" class="arrow">›</a>
+</div>
 
 <script>
   var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
@@ -269,6 +272,9 @@ svg {
   rendition.display(currentSectionIndex);
 
   book.ready.then(() => {
+
+    document.getElementById('wait').style.display = 'none'
+    document.getElementById('reader').style.display = 'block'
 
     var next = document.getElementById("next");
 
@@ -301,8 +307,6 @@ svg {
     document.addEventListener("keyup", keyListener, false);
 
   })
-
-  var title = document.getElementById("title");
 
   rendition.on("rendered", function(section){
     var current = book.navigation && book.navigation.get(section.href);
