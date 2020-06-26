@@ -16,6 +16,22 @@ const last = (a) => a[a.length - 1]
 // JS Promise flats another returned Promise automatically
 const insertNoDuplicated = (col, search, data) => col.findOne(search).then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId)).then(id => new mongo.ObjectID(id))
 
+const entityToOIdsPromises = (col, data) => data
+  // ensure the item has a name property
+  .filter(x => !!x.name)
+  // add unique field
+  .map(x => {
+    x.unique = sanitize(x.name)
+    return x
+  })
+  // remove duplicateds
+  .reduce((a, x) => {
+    if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
+    return a
+  }, [])
+  // convert to an array of Promises of ObjectIds
+  .map(x => insertNoDuplicated(col, { unique: x.unique }, x))
+
 
 if(!process.argv[2]) throw new Error('You must pass the dir path as parameter')
 
@@ -30,12 +46,14 @@ const parseRDF = (rdf, next) => {
         type: 'gutenberg'
       }
     },
-    author = [{}],
-    contributor = [],
-    illustrator = [],
     language = {
       code: '',
       name: ''
+    },
+    person = {
+      author: [],
+      contributor: [],
+      illustrator: []
     },
     personCapture = null,
     shelf = [],
@@ -54,8 +72,29 @@ const parseRDF = (rdf, next) => {
       re.test(o.subject.value) && (book.source.id = parseInt(re.exec(o.subject.value)[1]))
     }
 
+    // captures
+    // person capture mode
+    if(personCapture) {
+      //birthdate
+      if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/birthdate')
+        last(person[personCapture]).birthdate = o.object.value
+      //alias
+      else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/alias')
+        last(person[personCapture]).alias.push(o.object.value)
+      //deathdate
+      else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/deathdate')
+        last(person[personCapture]).deathdate = o.object.value
+      //name
+      else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/name')
+        last(person[personCapture]).name = o.object.value
+      //webpage
+      else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/webpage')
+        null
+      else
+        personCapture = null
+    }
     // we are in shelf capture mode
-    if(shelfCapture) {
+    else if(shelfCapture) {
       // after the o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/bookshelf'
       // we can have two types of tuples, so we discard that one that is not interesting to us
       if(o.predicate.value != 'http://purl.org/dc/dcam/memberOf') {
@@ -72,14 +111,32 @@ const parseRDF = (rdf, next) => {
       }
     }
 
+
     // book title
-    else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value.replace(/(\r|\n){1,}/g, ' ')
+    if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/title') book.title = o.object.value.replace(/(\r|\n){1,}/g, ' ')
     // issue date
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/issued') book.issued = o.object.value
     //language
     else if((o.predicate && o.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#value') && (o.object.datatype.value === 'http://purl.org/dc/terms/RFC4646')) language.code = o.object.value.toLowerCase()
 
-    // bookshelf - init the capture
+    // person
+    // author
+    else if(o.predicate.value === 'http://purl.org/dc/terms/creator') {
+      personCapture = 'author'
+      person.author.push({ alias: [] })
+    }
+    // contributor
+    else if(o.predicate.value === 'http://id.loc.gov/vocabulary/relators/ctb') {
+      personCapture = 'contributor'
+      person.contributor.push({ alias: [] })
+    }
+    // illustrator
+    else if(o.predicate.value === 'http://id.loc.gov/vocabulary/relators/ill') {
+      personCapture = 'illustrator'
+      person.illustrator.push({ alias: [] })
+    }
+
+    // shelf - init the capture
     else if(o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/bookshelf') shelfCapture = true
 
     // subject - init the capture
@@ -87,28 +144,6 @@ const parseRDF = (rdf, next) => {
 
     //rights
     else if(o.predicate && o.predicate.value === 'http://purl.org/dc/terms/rights') book.rights = o.object.value
-
-    //creator
-    //birthdate
-    else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/birthdate') {
-      if(last(author).birthdate) author.push({}) 
-      last(author).birthdate = o.object.value
-    }
-    //alias
-    else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/alias') {
-      if(last(author).alias) author.push({})
-      last(author).alias = o.object.value
-    }
-    //deathdate
-    else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/deathdate') {
-      if(last(author).deathdate) author.push({})
-      last(author).deathdate = o.object.value
-    }
-    //name
-    else if(o.predicate && o.predicate.value === 'http://www.gutenberg.org/2009/pgterms/name') {
-      if(last(author).name) author.push({})
-      last(author).name = o.object.value
-    }
 
   }
 
@@ -123,88 +158,56 @@ const parseRDF = (rdf, next) => {
     .on('end', () => {
 
       // MongoDB
-      // connection url
-      const url = 'mongodb://localhost:27017';
-      // catabase Name
-      const dbName = 'pickoob';
-
       // connection
-      mongo.MongoClient.connect(url, { useUnifiedTopology: true }).then(client => {
+      mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }).then(client => {
 
-        let authorOIdsPromises = author
-          // ensure the item is valid
-          .filter(x => x.name || x.alias)
-          // ensure name and alias are fullfiled
-          .map(x => {
-            if(!x.name) x.name = x.alias
-            else if(!x.alias) x.alias = x.name
-            return x
-          })
-          // add unique field
-          .map(x => {
-            x.unique = sanitize(x.name)
-            return x
-          })
-          // remove duplicateds
-          .reduce((a, x) => {
-            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
-            return a
-          }, [])
-          // convert to an array of Promises of ObjectIds
-          .map(x => insertNoDuplicated(client.db(dbName).collection('author'), { unique: x.unique }, x))
+        let db = client.db('pickoob')
 
-        let shelfOIdsPromises = shelf
-          // ensure the item is valid
-          .filter(x => !!x.name)
-          // add unique field
-          .map(x => {
-            x.unique = sanitize(x.name)
+        let authorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+          person['author'].filter(x => x.name || x.alias.length).map(x => {
+            if(!x.name) x.name = x.alias[0]
             return x
           })
-          // remove duplicateds
-          .reduce((a, x) => {
-            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
-            return a
-          }, [])
-          // convert to an array of Promises of ObjectIds
-          .map(x => insertNoDuplicated(client.db(dbName).collection('shelf'), { unique: x.unique }, x))
-
-        let subjectOIdsPromises = subject
-          // ensure the item is valid
-          .filter(x => !!x.name)
-          // add unique field
-          .map(x => {
-            x.unique = sanitize(x.name)
+        )
+        let contributorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+          person['contributor'].filter(x => x.name || x.alias.length).map(x => {
+            if(!x.name) x.name = x.alias[0]
             return x
           })
-          // remove duplicateds
-          .reduce((a, x) => {
-            if(!R.any(y => y.unique === x.unique)(a)) a.push(x)
-            return a
-          }, [])
-          // convert to an array of Promises of ObjectIds
-          .map(x => insertNoDuplicated(client.db(dbName).collection('subject'), { unique: x.unique }, x))
+        )
+        let illustratorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+          person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
+            if(!x.name) x.name = x.alias[0]
+            return x
+          })
+        )
+        let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), shelf)
+        let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), subject)
 
 
         Promise.all([
           Promise.all(authorOIdsPromises),
+          Promise.all(contributorOIdsPromises),
+          Promise.all(illustratorOIdsPromises),
           Promise.all(shelfOIdsPromises),
           Promise.all(subjectOIdsPromises),
-          insertNoDuplicated(client.db(dbName).collection('language'), { code: language.code }, language)
+          insertNoDuplicated(db.collection('language'), { code: language.code }, language)
         ]).then(res => {
 
-          let authorOIds, shelfOIds, subjectOIds
+          let authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId
 
-          [authorOIds, shelfOIds, subjectOIds, languageOId] = res
+          [authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId] = res
 
-          book.unique = sanitize(`${book.title}-${book.issued}`)
+          book.unique = sanitize(`${book.title}-${language.code}-${book.issued}`)
 
           book.author = authorOIds
+          book.contributor = contributorOIds
+          book.illustrator = illustratorOIds
           book.language = languageOId
           book.shelf = shelfOIds
           book.subject = subjectOIds
 
-          insertNoDuplicated(client.db(dbName).collection('book'), { unique: book.unique }, book).then(() => {
+          insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
             console.log(`Done processing the file ${rdf}`)
             client.close()
             next()
