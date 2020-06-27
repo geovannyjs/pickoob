@@ -30,13 +30,20 @@ const subjectView = require('./templates/subject/view')
 // functions
 const queryStringAsObject = (req) => querystring.parse(req.url.split(/\?/)[1])
 
-const buildPaging = (col, req) => col.countDocuments().then(count => {
-  let page = parseInt(queryStringAsObject(req).page) || 1
+const buildPaging = (col, req) => col.countDocuments().then(rows => {
+  let page = parseInt(queryStringAsObject(req).page) || 1,
+    limit = 10,
+    last = parseInt(rows/limit) + ((rows % limit > 0) ? 1 : 0)
+
   return {
     page,
-    rows: count,
-    limit: 10,
-    skip: (page - 1) * 10
+    first: 1,
+    previous: (page - 1 >= 1) ? page - 1 : 1,
+    next: (page + 1 <= last) ? page + 1 : last,
+    last,
+    rows,
+    limit,
+    skip: (page - 1) * limit
   }
 })
 

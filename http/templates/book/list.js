@@ -1,6 +1,7 @@
 const sanitize = require('../../../lib/string/sanitize')
 
 const wrapper = require('../components/wrapper')
+const paging = require('../components/paging')
 
 
 const list = (p) => {
@@ -11,7 +12,7 @@ const list = (p) => {
     <br>
     <a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a>
   </div>
-  `).join('') + '</div>' + `<br><br><a href="/books?page=${p.paging.page + 1}">Proxima</a>`
+  `).join('') + '</div><br><br>' + paging(p.paging, (page) => `/books?page=${page}`)
 
   return wrapper({ content })
 }

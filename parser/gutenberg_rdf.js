@@ -150,7 +150,6 @@ const parseRDF = (rdf, next) => {
 
   const rdfParser = new RdfXmlParser()
 
-  //rdfParser.import(textStream)
   fs.createReadStream(rdf)
     .pipe(rdfParser)
     .on('data', gather)
