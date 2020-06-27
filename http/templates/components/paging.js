@@ -1,7 +1,7 @@
 const R = require('ramda')
 
 
-const paging = (p, href) => {
+const paging = (p, href, searchGoal) => {
 
   let first = `<a href="${href(p.first)}" class="pure-button" title="First">&laquo;</a>`,
     previous = `<a href="${href(p.previous)}" class="pure-button" title="Previous">&lsaquo;</a>`,
