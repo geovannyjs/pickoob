@@ -240,11 +240,30 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
 
   router.get('/subjects', function (req, res) {
     res.statusCode = 200
+    let searchParameter = {name: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    buildPaging(subjectColl, req).then(paging => {
-      subjectColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(subjects => res.end(subjectList({ subjects, paging })))
-    })
+    if(searchParameter){
+      buildPaging(subjectColl, req, searchParameter).then(paging => {
+        subjectColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
+        .then(subjects => subjects.map(x => {
+          return bookColl.find({subject: {$eq: x._id}}).limit(5).toArray()
+            .then(bookPromise => {return{
+              subject: x,
+              books: bookPromise
+            }}
+            )
+        }))  
+        .then((x) => Promise.all(x))
+        //.then(() => res.end('aa'))
+        .then(object => res.end(subjectList({ object, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
+      })
+    }
+    else{
+      buildPaging(subjectColl, req).then(paging => {
+        subjectColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
+          .then(subjects => res.end(subjectList({ subjects, paging })))
+      })
+    }
   })
 
   router.get('/subject/:name/:id', function (req, res) {
@@ -268,8 +287,9 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
       let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
       res.write(`<br><br><a href="/books?search=${searchGoal}">Ver Mais<a><br><br>`)
       res.write(`<br><br><a href="/shelves?search=${searchGoal}">Ver Mais<a><br><br>`)
-      res.write(`<br><br><a href="/shelves?search=${searchGoal}">Ver Mais<a><br><br>`)
+      res.write(`<br><br><a href="/authors?search=${searchGoal}">Ver Mais<a><br><br>`)
       res.write(`<br><br><a href="/languages?search=${searchGoal}">Ver Mais<a><br><br>`)
+      res.write(`<br><br><a href="/subjects?search=${searchGoal}">Ver Mais<a><br><br>`)
       let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
       let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
       let Result = firstResult + secondResult + thirdResult
