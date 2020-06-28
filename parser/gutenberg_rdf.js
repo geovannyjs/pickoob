@@ -1,4 +1,6 @@
 const fs = require('fs')
+const { promisify } = require('util')
+const { gunzip } = require('zlib')
 
 const R = require('ramda')
 
@@ -8,6 +10,9 @@ const mongo = require('mongodb')
 const readFilesRecursively = require('../lib/files/read-files-recursively')
 const sanitize = require('../lib/string/sanitize')
 
+
+// promisify gunzip
+const gunzipPromise = promisify(gunzip)
 
 // returns the last element of an array
 const last = (a) => a[a.length - 1]
@@ -230,7 +235,14 @@ const parseRDF = (rdf, next) => {
             .then(() => fs.promises.readFile(`${curDir}/pg${book.source.id}.txt.utf8`, { encoding: 'utf-8' }).then(data => {
               book.synopsis = getSynopsis(data)
             }))
-            .catch(() => console.error('txt file not found'))
+            .catch(() => fs.promises.access(`${curDir}/pg${book.source.id}.txt.utf8.gzip`, fs.constants.R_OK)
+                .then(() => fs.promises.readFile(`${curDir}/pg${book.source.id}.txt.utf8.gzip`).then(buffer => {
+                  return gunzipPromise(buffer).then(x => {
+                    book.synopsis = getSynopsis(x.toString('utf8'))
+                  })
+                }))
+                .catch(() => console.error(`Without access to the file: ${curDir}/pg${book.source.id}.txt.utf8.gzip`))
+            )
 
           // check book format available
 
