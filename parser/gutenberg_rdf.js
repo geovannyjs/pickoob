@@ -14,7 +14,9 @@ const last = (a) => a[a.length - 1]
 
 // find the row, if already exists returns the ObjectId, otherwise insert it and return the ObjectId
 // JS Promise flats another returned Promise automatically
-const insertNoDuplicated = (col, search, data) => col.findOne(search).then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId)).then(id => new mongo.ObjectID(id))
+const insertNoDuplicated = (col, search, data) => col.findOne(search)
+  .then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId))
+  .then(id => new mongo.ObjectID(id))
 
 const entityToOIdsPromises = (col, data) => data
   // ensure the item has a name property
@@ -32,6 +34,19 @@ const entityToOIdsPromises = (col, data) => data
   // convert to an array of Promises of ObjectIds
   .map(x => insertNoDuplicated(col, { unique: x.unique }, x))
 
+const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
+  // remove blank lines
+  .filter(x => !x.match(/^\s+$/g))
+  // remove lines that start with spaces
+  .filter(x => !x.match(/^\s+/g))
+  // remove small lines
+  .filter(x => x.match(/.{70,}(\n|\r\n)/))
+  // discard invalid chars
+  .filter(x => !x.match(/[\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
+  .filter(x => x.match(/[\w\s\.\,]+?\n/))
+  .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
+  .substr(0, 800)
+
 
 if(!process.argv[2]) throw new Error('You must pass the dir path as parameter')
 
@@ -39,7 +54,10 @@ if(!process.argv[2]) throw new Error('You must pass the dir path as parameter')
 const parseRDF = (rdf, next) => {
 
   // not a RDF file
-  if(! (/\.rdf$/i).test(rdf)) return
+  if(! (/\.rdf$/i).test(rdf)) {
+    next()
+    return
+  }
 
   let book = {
       source: {
@@ -148,10 +166,8 @@ const parseRDF = (rdf, next) => {
   }
 
 
-  const rdfParser = new RdfXmlParser()
-
   fs.createReadStream(rdf)
-    .pipe(rdfParser)
+    .pipe(new RdfXmlParser())
     .on('data', gather)
     .on('error', console.error)
     .on('end', () => {
@@ -206,11 +222,31 @@ const parseRDF = (rdf, next) => {
           book.shelf = shelfOIds
           book.subject = subjectOIds
 
-          insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
-            console.log(`Done processing the file ${rdf}`)
-            client.close()
-            next()
-          })
+          // files operations
+          const curDir = rdf.split(/\//).slice(0, -1).join('/')
+
+          // get sinopse
+          let synopsis = fs.promises.access(`${curDir}/pg${book.source.id}.txt.utf8`, fs.constants.R_OK)
+            .then(() => fs.promises.readFile(`${curDir}/pg${book.source.id}.txt.utf8`, { encoding: 'utf-8' }).then(data => {
+              book.synopsis = getSynopsis(data)
+            }))
+            .catch(() => console.error('txt file not found'))
+
+          // check book format available
+
+          synopsis.then(() =>
+            // so, insert the book
+            insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
+
+              // upload book and book cover to CDN
+
+              // update the book as active
+
+              console.log(`Done processing the file ${rdf}`)
+              client.close()
+              next()
+            })
+          )
 
         })
 
