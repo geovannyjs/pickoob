@@ -5,6 +5,7 @@ const finalhandler = require('finalhandler')
 const querystring = require('querystring')
 
 const mongo = require('mongodb')
+const R = require('ramda')
 
 const sanitize = require('../lib/string/sanitize')
 
@@ -30,46 +31,23 @@ const subjectView = require('./templates/subject/view')
 // functions
 const queryStringAsObject = (req) => querystring.parse(req.url.split(/\?/)[1])
 
-const buildPaging = (col, req, search) => { 
-  if(search){
-    console.log("dicaaaaaaa: " + search)
-    return col.countDocuments(search).then(rows => {
-      let page = parseInt(queryStringAsObject(req).page) || 1,
-      limit = 10,
-      last = parseInt(rows/limit) + ((rows % limit > 0) ? 1 : 0)
+const buildPaging = (col, req, search) => col.countDocuments(search || {}).then(rows => {
+
+  let page = parseInt(queryStringAsObject(req).page) || 1,
+  limit = 10,
+  last = parseInt(rows/limit) + ((rows % limit > 0) ? 1 : 0)
   
-    return {
-      page,
-      first: 1,
-      previous: (page - 1 >= 1) ? page - 1 : 1,
-      next: (page + 1 <= last) ? page + 1 : last,
-      last,
-      rows,
-      limit,
-      skip: (page - 1) * limit
-      }
-    })
-  
-} 
-else{
-  return col.countDocuments().then(rows => {
-    let page = parseInt(queryStringAsObject(req).page) || 1,
-      limit = 10,
-      last = parseInt(rows/limit) + ((rows % limit > 0) ? 1 : 0)
-  
-    return {
-      page,
-      first: 1,
-      previous: (page - 1 >= 1) ? page - 1 : 1,
-      next: (page + 1 <= last) ? page + 1 : last,
-      last,
-      rows,
-      limit,
-      skip: (page - 1) * limit
-      }
-    })
+  return {
+    page,
+    first: 1,
+    previous: R.max(page - 1, 1),
+    next: R.min(page + 1, last),
+    last,
+    rows,
+    limit,
+    skip: (page - 1) * limit
   }
-}
+})
 
 
 //DB connection
