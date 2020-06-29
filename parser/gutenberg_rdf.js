@@ -2,10 +2,9 @@ const fs = require('fs')
 const { promisify } = require('util')
 const { gunzip } = require('zlib')
 
-const R = require('ramda')
-
-const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 const mongo = require('mongodb')
+const R = require('ramda')
+const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 
 const readFilesRecursively = require('../lib/files/read-files-recursively')
 const sanitize = require('../lib/string/sanitize')
@@ -48,7 +47,7 @@ const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   .filter(x => x.match(/.{70,}(\n|\r\n)/))
   // discard invalid chars
   .filter(x => !x.match(/[\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
-  .filter(x => x.match(/[\w\s\.\,]+?\n/))
+  .filter(x => x.match(/[\w\s\.\,\;\(\)\"\'\!\?]+?\n/))
   .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
   .substr(0, 800)
 
