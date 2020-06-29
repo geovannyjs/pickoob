@@ -44,9 +44,9 @@ const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   // remove lines that start with spaces
   .filter(x => !x.match(/^\s+/g))
   // remove small lines
-  .filter(x => x.match(/.{70,}(\n|\r\n)/))
+  .filter(x => x.match(/.{50,}(\n|\r\n)/))
   // discard invalid chars
-  .filter(x => !x.match(/[\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
+  .filter(x => !x.match(/[\@\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
   .filter(x => x.match(/[\w\s\.\,\;\(\)\"\'\!\?]+?\n/))
   .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
   .substr(0, 800)
@@ -239,16 +239,12 @@ const parseRDF = (rdf, next) => {
 
             // get synopsis
             let synopsis = fs.promises.access(bookTxt, fs.constants.R_OK)
-              .then(() => fs.promises.readFile(bookTxt, { encoding: 'utf-8' }).then(data => {
-                book.synopsis = getSynopsis(data)
-              }))
+              .then(() => fs.promises.readFile(bookTxt, { encoding: 'utf-8' }).then(data => book.synopsis = getSynopsis(data)))
               .catch(() => fs.promises.access(bookTxtGzip, fs.constants.R_OK)
-                  .then(() => fs.promises.readFile(bookTxtGzip).then(buffer => {
-                    return gunzipPromise(buffer).then(x => {
-                      book.synopsis = getSynopsis(x.toString('utf8'))
-                    })
-                  }))
-                  .catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
+                .then(() => fs.promises.readFile(bookTxtGzip).then(buffer => {
+                  return gunzipPromise(buffer).then(x => book.synopsis = getSynopsis(x.toString('utf8')))
+                }))
+                .catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
               )
 
             return synopsis.then(() =>
