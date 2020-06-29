@@ -246,7 +246,7 @@ svg {
   </div>
   <div class="pure-u-4-5">
     <h1>${b.title}</h1>
-    <pre>${b.synopsis}</pre>
+    ${b.synopsis ? '<p>' + b.synopsis.replace(/\r\n/g, '').replace(/\n\n/g, '</p><p>') + '<p>' : ''}
   </div>
 </div>
 
