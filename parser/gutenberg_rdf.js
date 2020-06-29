@@ -177,93 +177,103 @@ const parseRDF = (rdf, next) => {
     .on('error', console.error)
     .on('end', () => {
 
-      // MongoDB
-      // connection
-      mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }).then(client => {
+      // gutenberg book id
+      let curDir = rdf.split(/\//).slice(0, -1).join('/')
+      let gbBookId = book.source.id
+      let epub = `${curDir}/pg${gbBookId}-images.epub`
 
-        let db = client.db('pickoob')
+      // check if book epub is available
+      fs.promises.access(epub, fs.constants.R_OK).then(() => {
 
-        let authorOIdsPromises = entityToOIdsPromises(db.collection('author'),
-          person['author'].filter(x => x.name || x.alias.length).map(x => {
-            if(!x.name) x.name = x.alias[0]
-            return x
-          })
-        )
-        let contributorOIdsPromises = entityToOIdsPromises(db.collection('author'),
-          person['contributor'].filter(x => x.name || x.alias.length).map(x => {
-            if(!x.name) x.name = x.alias[0]
-            return x
-          })
-        )
-        let illustratorOIdsPromises = entityToOIdsPromises(db.collection('author'),
-          person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
-            if(!x.name) x.name = x.alias[0]
-            return x
-          })
-        )
-        let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), shelf)
-        let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), subject)
+        // MongoDB
+        // connection
+        return mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }).then(client => {
 
+          let db = client.db('pickoob')
 
-        Promise.all([
-          Promise.all(authorOIdsPromises),
-          Promise.all(contributorOIdsPromises),
-          Promise.all(illustratorOIdsPromises),
-          Promise.all(shelfOIdsPromises),
-          Promise.all(subjectOIdsPromises),
-          insertNoDuplicated(db.collection('language'), { code: language.code }, language)
-        ]).then(res => {
-
-          let authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId
-
-          [authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId] = res
-
-          book.unique = sanitize(`${book.title}-${language.code}-${book.issued}`)
-
-          book.author = authorOIds
-          book.contributor = contributorOIds
-          book.illustrator = illustratorOIds
-          book.language = languageOId
-          book.shelf = shelfOIds
-          book.subject = subjectOIds
-
-          // files operations
-          const curDir = rdf.split(/\//).slice(0, -1).join('/')
-
-          // get sinopse
-          let synopsis = fs.promises.access(`${curDir}/pg${book.source.id}.txt.utf8`, fs.constants.R_OK)
-            .then(() => fs.promises.readFile(`${curDir}/pg${book.source.id}.txt.utf8`, { encoding: 'utf-8' }).then(data => {
-              book.synopsis = getSynopsis(data)
-            }))
-            .catch(() => fs.promises.access(`${curDir}/pg${book.source.id}.txt.utf8.gzip`, fs.constants.R_OK)
-                .then(() => fs.promises.readFile(`${curDir}/pg${book.source.id}.txt.utf8.gzip`).then(buffer => {
-                  return gunzipPromise(buffer).then(x => {
-                    book.synopsis = getSynopsis(x.toString('utf8'))
-                  })
-                }))
-                .catch(() => console.error(`Without access to the file: ${curDir}/pg${book.source.id}.txt.utf8.gzip`))
-            )
-
-          // check book format available
-
-          synopsis.then(() =>
-            // so, insert the book
-            insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
-
-              // upload book and book cover to CDN
-
-              // update the book as active
-
-              console.log(`Done processing the file ${rdf}`)
-              client.close()
-              next()
+          let authorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+            person['author'].filter(x => x.name || x.alias.length).map(x => {
+              if(!x.name) x.name = x.alias[0]
+              return x
             })
           )
+          let contributorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+            person['contributor'].filter(x => x.name || x.alias.length).map(x => {
+              if(!x.name) x.name = x.alias[0]
+              return x
+            })
+          )
+          let illustratorOIdsPromises = entityToOIdsPromises(db.collection('author'),
+            person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
+              if(!x.name) x.name = x.alias[0]
+              return x
+            })
+          )
+          let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), shelf)
+          let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), subject)
+
+
+          return Promise.all([
+            Promise.all(authorOIdsPromises),
+            Promise.all(contributorOIdsPromises),
+            Promise.all(illustratorOIdsPromises),
+            Promise.all(shelfOIdsPromises),
+            Promise.all(subjectOIdsPromises),
+            insertNoDuplicated(db.collection('language'), { code: language.code }, language)
+          ]).then(res => {
+
+            let authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId
+
+            [authorOIds, contributorOIds, illustratorOIds, shelfOIds, subjectOIds, languageOId] = res
+
+            book.unique = sanitize(`${book.title}-${language.code}-${book.issued}`)
+
+            book.author = authorOIds
+            book.contributor = contributorOIds
+            book.illustrator = illustratorOIds
+            book.language = languageOId
+            book.shelf = shelfOIds
+            book.subject = subjectOIds
+
+            let bookTxt = `${curDir}/pg${gbBookId}.txt.utf8`
+            let bookTxtGzip = `${curDir}/pg${gbBookId}.txt.utf8.gzip`
+
+            // get synopsis
+            let synopsis = fs.promises.access(bookTxt, fs.constants.R_OK)
+              .then(() => fs.promises.readFile(bookTxt, { encoding: 'utf-8' }).then(data => {
+                book.synopsis = getSynopsis(data)
+              }))
+              .catch(() => fs.promises.access(bookTxtGzip, fs.constants.R_OK)
+                  .then(() => fs.promises.readFile(bookTxtGzip).then(buffer => {
+                    return gunzipPromise(buffer).then(x => {
+                      book.synopsis = getSynopsis(x.toString('utf8'))
+                    })
+                  }))
+                  .catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
+              )
+
+            return synopsis.then(() =>
+              // so, insert the book
+              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
+
+                // upload book and book cover to CDN
+
+                // update the book as active
+
+              })
+            )
+
+          }).then(() => client.close())
 
         })
-
-      })
     
+      })
+      .catch(() => console.error(`Epub file not found: ${epub}`))
+      .then(() => {
+        console.log(`Done processing the file ${rdf}`)
+        next()
+      })
+
     })
 
 }
