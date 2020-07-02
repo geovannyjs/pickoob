@@ -201,24 +201,38 @@ const parseRDF = (rdf, next) => {
           let authorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['author'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let contributorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['contributor'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let illustratorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
-          let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), shelf)
-          let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), subject)
+          let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), 
+            shelf.map(x => {
+              x.inserted_at = x.updated_at = new Date()
+              return x
+            })
+          )
+          let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), 
+            subject.map(x => {
+              x.inserted_at = x.updated_at = new Date()
+              return x
+            })
+          )
 
+          language.inserted_at = language.updated_at = new Date()
 
           return Promise.all([
             Promise.all(authorOIdsPromises),
@@ -241,6 +255,7 @@ const parseRDF = (rdf, next) => {
             book.language = languageOId
             book.shelf = shelfOIds
             book.subject = subjectOIds
+            book.inserted_at = book.updated_at = new Date()
 
             let bookTxt = `${curDir}/pg${gbBookId}.txt.utf8`
             let bookTxtGzip = `${curDir}/pg${gbBookId}.txt.utf8.gzip`
