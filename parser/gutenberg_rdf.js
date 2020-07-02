@@ -55,7 +55,7 @@ const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   .filter(x => x.match(/.{50,}(\n|\r\n)/))
   // discard invalid chars
   .filter(x => !x.match(/[\@\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
-  .filter(x => x.match(/[\w\s\.\,\;\(\)\"\'\!\?]+?\n/))
+  .filter(x => x.match(/.+?\n/))
   .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
   .substr(0, 800)
 
