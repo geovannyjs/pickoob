@@ -201,6 +201,7 @@ const parseRDF = (rdf, next) => {
           let authorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['author'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.active = true
               x.inserted_at = x.updated_at = new Date()
               return x
             })
@@ -208,6 +209,7 @@ const parseRDF = (rdf, next) => {
           let contributorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['contributor'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.active = true
               x.inserted_at = x.updated_at = new Date()
               return x
             })
@@ -215,23 +217,27 @@ const parseRDF = (rdf, next) => {
           let illustratorOIdsPromises = entityToOIdsPromises(db.collection('author'),
             person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
+              x.active = true
               x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), 
             shelf.map(x => {
+              x.active = true
               x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), 
             subject.map(x => {
+              x.active = true
               x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
 
+          language.active = true
           language.inserted_at = language.updated_at = new Date()
 
           return Promise.all([
@@ -255,6 +261,7 @@ const parseRDF = (rdf, next) => {
             book.language = languageOId
             book.shelf = shelfOIds
             book.subject = subjectOIds
+            book.active = false // if upload the epub file with success it will be marked as true
             book.inserted_at = book.updated_at = new Date()
 
             let bookTxt = `${curDir}/pg${gbBookId}.txt.utf8`
@@ -275,7 +282,7 @@ const parseRDF = (rdf, next) => {
               // so, insert the book
               insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid => {
                 
-                /*
+                
                 // upload book and book cover to CDN
                 return fs.promises.readFile(epub).then(data => {
                   return s3.upload({
@@ -293,8 +300,8 @@ const parseRDF = (rdf, next) => {
                       ACL: 'public-read'
                     }).promise()
                   })
-                )
-                */
+                ).then(() => db.collection('book').updateOne({ _id: bid }, { $set: { active: true } }))
+                
 
               })
             )
