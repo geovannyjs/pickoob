@@ -10,6 +10,14 @@ const readFilesRecursively = require('../lib/files/read-files-recursively')
 const sanitize = require('../lib/string/sanitize')
 
 
+// global values
+const aws = require('aws-sdk')
+const s3 = new aws.S3({
+  endpoint: new aws.Endpoint('ams3.digitaloceanspaces.com')
+})
+
+
+// global functions
 // promisify gunzip
 const gunzipPromise = promisify(gunzip)
 
@@ -236,6 +244,7 @@ const parseRDF = (rdf, next) => {
 
             let bookTxt = `${curDir}/pg${gbBookId}.txt.utf8`
             let bookTxtGzip = `${curDir}/pg${gbBookId}.txt.utf8.gzip`
+            let cover = `${curDir}/pg${gbBookId}.cover.medium.jpg`
 
             // get synopsis
             let synopsis = fs.promises.access(bookTxt, fs.constants.R_OK)
@@ -249,13 +258,28 @@ const parseRDF = (rdf, next) => {
 
             return synopsis.then(() =>
               // so, insert the book
-              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(() => {
-
+              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid =>
+                
                 // upload book and book cover to CDN
+                fs.promises.readFile(epub).then(data => {
+                  return s3.upload({
+                    Bucket: 'pickoob',
+                    Body: data,
+                    Key: `content/books/${bid}/book.epub`,
+                    ACL: 'public-read'
+                  }).promise()
+                }).then(() => 
+                  fs.promises.readFile(cover).then(data => {
+                    return s3.upload({
+                      Bucket: 'pickoob',
+                      Body: data,
+                      Key: `content/books/${bid}/cover.jpg`,
+                      ACL: 'public-read'
+                    }).promise()
+                  })
+                )
 
-                // update the book as active
-
-              })
+              )
             )
 
           }).then(() => client.close())
