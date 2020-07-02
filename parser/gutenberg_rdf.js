@@ -54,7 +54,7 @@ const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   // remove small lines
   .filter(x => x.match(/.{50,}(\n|\r\n)/))
   // discard invalid chars
-  .filter(x => !x.match(/[\@\$\%\|\-\+\_\*\=\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
+  .filter(x => !x.match(/[\@\$\%\|\-\+\_\*\=\(\)\[\]]/) && !x.match(/http(s){0,1}\:\/\//) && !x.match(/gutenberg/i))
   .filter(x => x.match(/.+?\n/))
   .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
   .substr(0, 800)
@@ -258,10 +258,11 @@ const parseRDF = (rdf, next) => {
 
             return synopsis.then(() =>
               // so, insert the book
-              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid =>
+              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid => {
                 
+                /*
                 // upload book and book cover to CDN
-                fs.promises.readFile(epub).then(data => {
+                return fs.promises.readFile(epub).then(data => {
                   return s3.upload({
                     Bucket: 'pickoob',
                     Body: data,
@@ -278,8 +279,9 @@ const parseRDF = (rdf, next) => {
                     }).promise()
                   })
                 )
+                */
 
-              )
+              })
             )
 
           }).then(() => client.close())
