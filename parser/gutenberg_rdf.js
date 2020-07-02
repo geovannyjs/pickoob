@@ -275,8 +275,7 @@ const parseRDF = (rdf, next) => {
                 .then(() => fs.promises.readFile(bookTxtGzip).then(buffer => {
                   return gunzipPromise(buffer).then(x => book.synopsis = getSynopsis(x.toString('utf8')))
                 }))
-                .catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
-              )
+              ).catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
 
             return synopsis.then(() =>
               // so, insert the book
@@ -300,6 +299,8 @@ const parseRDF = (rdf, next) => {
                       ACL: 'public-read'
                     }).promise()
                   })
+                  // no problem if cover is not uploaded
+                  .catch(() => console.log(`book cover ${cover} not uploaded`))
                 ).then(() => db.collection('book').updateOne({ _id: bid }, { $set: { active: true } }))
                 
 
