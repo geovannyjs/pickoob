@@ -268,18 +268,16 @@ const parseRDF = (rdf, next) => {
             let cover = `${curDir}/pg${gbBookId}.cover.medium.jpg`
 
             // get synopsis
-            let synopsis = fs.promises.access(bookTxt, fs.constants.R_OK)
-              .then(() => fs.promises.readFile(bookTxt, { encoding: 'utf-8' }).then(data => book.synopsis = getSynopsis(data)))
-              .catch(() => fs.promises.access(bookTxtGzip, fs.constants.R_OK)
-                .then(() => fs.promises.readFile(bookTxtGzip).then(buffer => {
-                  return gunzipPromise(buffer).then(x => book.synopsis = getSynopsis(x.toString('utf8')))
-                }))
+            let synopsis = fs.promises.readFile(bookTxt, { encoding: 'utf-8' })
+              .then(data => book.synopsis = getSynopsis(data))
+              .catch(() => fs.promises.readFile(bookTxtGzip)
+                .then( buffer => gunzipPromise(buffer).then(x => book.synopsis = getSynopsis(x.toString('utf8'))) )
               ).catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
 
             return synopsis.then(() =>
               // so, insert the book
               insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid => {
-                
+
                 // upload book and book cover to CDN
                 return fs.promises.readFile(epub).then(data => {
                   return s3.upload({
