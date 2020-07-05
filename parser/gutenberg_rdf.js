@@ -28,7 +28,7 @@ const last = (a) => a[a.length - 1]
 // find the row, if already exists returns the ObjectId, otherwise insert it and return the ObjectId
 // JS Promise flats another returned Promise automatically
 const insertNoDuplicated = (col, search, data) => col.findOne(search)
-  .then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId))
+  .then(r => r ? r._id : col.insertOne({ ...data, inserted_at: new Date() }).then(r => r.insertedId))
   .then(id => new mongo.ObjectID(id)) 
  
 // receives a MongoDB collection and an array of entities
@@ -209,7 +209,7 @@ const parseRDF = (rdf, next) => {
 
         // MongoDB
         // connection
-        return mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }).then(client => {
+        return mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true }).then(client => {
 
           let db = client.db('pickoob')
 
@@ -217,7 +217,6 @@ const parseRDF = (rdf, next) => {
             person['author'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
               x.active = true
-              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
@@ -225,7 +224,6 @@ const parseRDF = (rdf, next) => {
             person['contributor'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
               x.active = true
-              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
@@ -233,27 +231,23 @@ const parseRDF = (rdf, next) => {
             person['illustrator'].filter(x => x.name || x.alias.length).map(x => {
               if(!x.name) x.name = x.alias[0]
               x.active = true
-              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let shelfOIdsPromises = entityToOIdsPromises(db.collection('shelf'), 
             shelf.map(x => {
               x.active = true
-              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
           let subjectOIdsPromises = entityToOIdsPromises(db.collection('subject'), 
             subject.map(x => {
               x.active = true
-              x.inserted_at = x.updated_at = new Date()
               return x
             })
           )
 
           language.active = true
-          language.inserted_at = language.updated_at = new Date()
 
           return Promise.all([
             Promise.all(authorOIdsPromises),
@@ -277,7 +271,6 @@ const parseRDF = (rdf, next) => {
             book.shelf = shelfOIds
             book.subject = subjectOIds
             book.active = false // if upload the epub file with success it will be marked as true
-            book.inserted_at = book.updated_at = new Date()
 
             let bookTxt = `${curDir}/pg${gbBookId}.txt.utf8`
             let bookTxtGzip = `${curDir}/pg${gbBookId}.txt.utf8.gzip`
@@ -303,7 +296,7 @@ const parseRDF = (rdf, next) => {
                     if(epubStats.size && (!b.epub || epubStats.size != b.epub.size)) {
                       book.epub = b.epub || {}
                       book.epub.size = epubStats.size
-                      book.epub.inserted = new Date()
+                      book.epub.inserted_at = new Date()
                       console.log(`uploading ${epub}`)
                       return uploadFileToAWSS3(epub, {
                         Bucket: 'pickoob',
@@ -322,7 +315,7 @@ const parseRDF = (rdf, next) => {
                       if(coverStats.size && (!b.cover || coverStats.size != b.cover.size)) {
                         book.cover = b.cover || {}
                         book.cover.size = coverStats.size
-                        book.cover.inserted = new Date()
+                        book.cover.inserted_at = new Date()
                         console.log(`uploading ${cover}`)
                         return uploadFileToAWSS3(cover, {
                           Bucket: 'pickoob',
@@ -339,8 +332,9 @@ const parseRDF = (rdf, next) => {
                   // mark book as active
                   .then(() => {
                     book.active = true
-                    db.collection('book').updateOne({ _id: new mongo.ObjectID(b._id) }, { $set: book })
+                    db.collection('book').updateOne({ _id: new mongo.ObjectID(b._id) }, { $set: { ...book, updated_at: new Date() } })
                   })
+                  .catch(() => console.log(`book epub ${epub} not uploaded`))
 
                 )
             )
