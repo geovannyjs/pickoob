@@ -28,8 +28,10 @@ const last = (a) => a[a.length - 1]
 // JS Promise flats another returned Promise automatically
 const insertNoDuplicated = (col, search, data) => col.findOne(search)
   .then(r => r ? r._id : col.insertOne(data).then(r => r.insertedId))
-  .then(id => new mongo.ObjectID(id))
-
+  .then(id => new mongo.ObjectID(id)) 
+ 
+// receives a MongoDB collection and an array of entities
+// insert all items and return the ObjectId or return the ObjectId it the already exists based in the unique property
 const entityToOIdsPromises = (col, data) => data
   // ensure the item has a name property
   .filter(x => !!x.name)
@@ -46,6 +48,8 @@ const entityToOIdsPromises = (col, data) => data
   // convert to an array of Promises of ObjectIds
   .map(x => insertNoDuplicated(col, { unique: x.unique }, x))
 
+// receives the text string and try to get a piece of text between 500 and 800 chars
+// apply some filters to ignore chunks of texts with special chars, etc...
 const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   // remove blank lines
   .filter(x => !x.match(/^\s+$/g))
@@ -58,8 +62,25 @@ const getSynopsis = (text) => text.split(/(\n|\r\n){2,}/)
   .reduce((a, x) => (a.length < 500) ? a.concat(`${x}\n\n`) : a, '')
   .substr(0, 800)
 
+// upload file to AWS S3
+// FIXME add a sleep to wait x seconds before a new attempt
+const uploadFileToAWSS3 = (file, params, attempts = 0) => {
 
-if(!process.argv[2]) throw new Error('You must pass the dir path as parameter')
+  const uploadS3Attempts = (p, a) => s3.upload(p).promise()
+    .catch(() => (a > 0) ? uploadS3Attempts(p, a - 1) : null )
+
+  return fs.promises.readFile(file)
+  .then(data => {
+
+    let np = { ...params, Body: data }
+
+    return uploadS3Attempts(np, attempts)
+
+  })
+}
+
+
+if(!process.argv[2]) throw new Error('You must pass the dir path containing the RDFs, epubs and covers as parameter')
 
 
 const parseRDF = (rdf, next) => {
@@ -276,30 +297,57 @@ const parseRDF = (rdf, next) => {
 
             return synopsis.then(() =>
               // so, insert the book
-              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book).then(bid => {
+              insertNoDuplicated(db.collection('book'), { unique: book.unique }, book)
+                .then(bOId => db.collection('book').findOne({ _id: bOId }))
+                .then(b => 
 
-                // upload book and book cover to CDN
-                return fs.promises.readFile(epub).then(data => {
-                  return s3.upload({
-                    Bucket: 'pickoob',
-                    Body: data,
-                    Key: `content/books/${bid}/book.epub`,
-                    ACL: 'public-read'
-                  }).promise()
-                }).then(() => 
-                  fs.promises.readFile(cover).then(data => {
-                    return s3.upload({
-                      Bucket: 'pickoob',
-                      Body: data,
-                      Key: `content/books/${bid}/cover.jpg`,
-                      ACL: 'public-read'
-                    }).promise()
+                  // get epub file size
+                  fs.promises.stat(epub).then(epubStats => {
+
+                    // upload book to CDN
+                    if(epubStats.size && (!b.epub || epubStats.size != b.epub.size)) {
+                      book.epub = b.epub || {}
+                      book.epub.size = epubStats.size
+                      book.epub.inserted = new Date()
+                      console.log(`uploading ${epub}`)
+                      return uploadFileToAWSS3(epub, {
+                        Bucket: 'pickoob',
+                        Key: `content/books/${b._id}/book.epub`,
+                        ACL: 'public-read'
+                      })
+                    }
+
                   })
-                  // no problem if cover is not uploaded
-                  .catch(() => console.log(`book cover ${cover} not uploaded`))
-                ).then(() => db.collection('book').updateOne({ _id: bid }, { $set: { active: true } }))
+                  // get cover file size
+                  .then(() =>
+                  
+                    fs.promises.stat(cover).then(coverStats => {
 
-              })
+                      // upload cover to CDN
+                      if(coverStats.size && (!b.cover || coverStats.size != b.cover.size)) {
+                        book.cover = b.cover || {}
+                        book.cover.size = coverStats.size
+                        book.cover.inserted = new Date()
+                        console.log(`uploading ${cover}`)
+                        return uploadFileToAWSS3(cover, {
+                          Bucket: 'pickoob',
+                          Key: `content/books/${b._id}/cover.jpg`,
+                          ACL: 'public-read'
+                        })
+                        // no problem if cover is not uploaded
+                        .catch(() => console.log(`book cover ${cover} not uploaded`))
+                      }
+
+                    })
+
+                  )
+                  // mark book as active
+                  .then(() => {
+                    book.active = true
+                    db.collection('book').updateOne({ _id: new mongo.ObjectID(b._id) }, { $set: book })
+                  })
+
+                )
             )
 
           }).then(() => client.close())
