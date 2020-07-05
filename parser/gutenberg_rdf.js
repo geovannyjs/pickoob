@@ -6,6 +6,7 @@ const mongo = require('mongodb')
 const R = require('ramda')
 const RdfXmlParser = require('rdfxml-streaming-parser').RdfXmlParser
 
+const hashFragmenter = require('../lib/cdn/hashFragmenter')
 const readFilesRecursively = require('../lib/files/read-files-recursively')
 const sanitize = require('../lib/string/sanitize')
 
@@ -70,13 +71,7 @@ const uploadFileToAWSS3 = (file, params, attempts = 0) => {
     .catch(() => (a > 0) ? uploadS3Attempts(p, a - 1) : null )
 
   return fs.promises.readFile(file)
-  .then(data => {
-
-    let np = { ...params, Body: data }
-
-    return uploadS3Attempts(np, attempts)
-
-  })
+  .then(data => uploadS3Attempts({ ...params, Body: data }, attempts))
 }
 
 
@@ -312,7 +307,7 @@ const parseRDF = (rdf, next) => {
                       console.log(`uploading ${epub}`)
                       return uploadFileToAWSS3(epub, {
                         Bucket: 'pickoob',
-                        Key: `content/books/${b._id}/book.epub`,
+                        Key: `content/books/${hashFragmenter(b._id.toString())}/book.epub`,
                         ACL: 'public-read'
                       })
                     }
@@ -331,7 +326,7 @@ const parseRDF = (rdf, next) => {
                         console.log(`uploading ${cover}`)
                         return uploadFileToAWSS3(cover, {
                           Bucket: 'pickoob',
-                          Key: `content/books/${b._id}/cover.jpg`,
+                          Key: `content/books/${hashFragmenter(b._id.toString())}/cover.jpg`,
                           ACL: 'public-read'
                         })
                         // no problem if cover is not uploaded
