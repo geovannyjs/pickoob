@@ -100,7 +100,7 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
     let search = queryStringAsObject(req).search
-    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+    let find = { name: { $regex: new RegExp(search, 'i') } }
 
     buildPaging(authorColl, req, find).then(paging =>
       // list authors
@@ -157,7 +157,7 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
     let search = queryStringAsObject(req).search
-    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+    let find = { name: { $regex: new RegExp(search, 'i') } }
 
     buildPaging(languageColl, req, find).then(paging =>
       // list languages
@@ -194,7 +194,7 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
     let search = queryStringAsObject(req).search
-    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+    let find = { name: { $regex: new RegExp(search, 'i') } }
 
     buildPaging(shelfColl, req, find).then(paging =>
       // list shelves
@@ -231,7 +231,7 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
     let search = queryStringAsObject(req).search
-    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+    let find = { name: { $regex: new RegExp(search, 'i') } }
 
     buildPaging(subjectColl, req, find).then(paging =>
       // list subjects
