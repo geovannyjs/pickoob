@@ -243,7 +243,8 @@ svg {
     <img src="https://pickoob.ams3.cdn.digitaloceanspaces.com/content/books/${hashFragmenter(b._id.toString())}/cover.jpg">
     <br>
     issued: ${b.issued}<br>
-    rights: ${b.rights}
+    rights: ${b.rights}<br>
+    source: <a href="https://www.gutenberg.org/ebooks/${b.source.id}" target="_blank">Gutenberg</a>
   </div>
   <div class="pure-u-1 pure-u-lg-4-5">
     <h1>${b.title}</h1>
