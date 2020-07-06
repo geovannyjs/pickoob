@@ -22,6 +22,8 @@ const authorView = require('./templates/author/view')
 const languageList = require('./templates/language/list')
 const languageView = require('./templates/language/view')
 
+const searchTemplate = require('./templates/search/list')
+
 const shelfList = require('./templates/shelf/list')
 const shelfView = require('./templates/shelf/view')
 
@@ -267,25 +269,26 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-    let searchGoal = queryStringAsObject(req).search || ''
+    let search = queryStringAsObject(req).search
+    let find = { name: { $regex: new RegExp(search, 'i') } }
+    let findBooks = { title: { $regex: new RegExp(search, 'i') } }
 
     Promise.all([
-      shelfColl.find({name: {$regex: new RegExp(searchGoal)}}).limit(10).toArray(),
-      authorColl.find({name: {$regex: new RegExp(searchGoal)}}).limit(10).toArray(),
-      bookColl.find({title: {$regex: new RegExp(searchGoal)}}).limit(10).toArray()
-    ]).then((items) =>{
-      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-      res.write(`<br><br><a href="/books?search=${searchGoal}">Ver Mais<a><br><br>`)
-      res.write(`<br><br><a href="/shelves?search=${searchGoal}">Ver Mais<a><br><br>`)
-      res.write(`<br><br><a href="/authors?search=${searchGoal}">Ver Mais<a><br><br>`)
-      res.write(`<br><br><a href="/languages?search=${searchGoal}">Ver Mais<a><br><br>`)
-      res.write(`<br><br><a href="/subjects?search=${searchGoal}">Ver Mais<a><br><br>`)
-      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
-      let Result = firstResult + secondResult + thirdResult
-      return Result
-    })
-    .then(content => res.end(wrapper({ content })))
+      bookColl.find(findBooks).limit(5).toArray(),
+      subjectColl.find(find).limit(5).toArray(),
+      authorColl.find(find).limit(5).toArray(),
+      languageColl.find(find).limit(5).toArray(),
+      shelfColl.find(find).limit(5).toArray()
+    ])
+    .then(items => 
+      res.end(searchTemplate({ 
+        books: items[0],
+        subjects: items[1],
+        authors: items[2],
+        languages: items[3],
+        shelves: items[4] 
+      }))
+    )
 
   })
 
