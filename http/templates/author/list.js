@@ -8,7 +8,7 @@ const bookItems = require('../book/bookItems')
 
 const list = (p) => {
 
-  let content = p.object
+  let content = p.rows
     .map(x => 
       `<a href="/author/${sanitize(x.author.name)}/${x.author._id}">${x.author.name}</a>
       <br><br>

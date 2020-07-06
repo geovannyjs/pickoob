@@ -104,55 +104,34 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
 
   })
 
-  router.get('/authors', function (req, res) {
+  router.get('/authors', (req, res) => {
     res.statusCode = 200
-    let searchParameter = {name: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    if(searchParameter){
 
-      buildPaging(authorColl, req, searchParameter).then(paging => {
-        //Getting an array with the results of author's table consult with a search parameter
-        authorColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
-        .then(authors => authors.map(x => {
-          /*for each element from the array we do a search on book's table, to get the books where 
-          the author's id field from books is equal to the id from author's table current element*/
-          return bookColl.find({author: {$eq: x._id}}).limit(5).toArray()
-          /*then we transform the books and the authors that we got into a new object where each
-           element contains the author's information and the books that he wrote*/
-            .then(bookPromise => {return{
-              author: x,
-              books: bookPromise
-            }}
-            )
-        }))
-        //we need to wait until all the results are ready  
-        .then((x) => Promise.all(x))
-        //pass the parameters to authorList to create the html page
-        .then(object => res.end(authorList({ object, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
-      })
-    }
+    let search = queryStringAsObject(req).search
+    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
 
-    else{
-      /*same as the if statement, the difference here is that when we call the authorList function
-      we don't pass search as a parameter*/
-      buildPaging(authorColl, req).then(paging => {
-        authorColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(authors => authors.map(x => {
-          return bookColl.find({author: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              author: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(authorList({ object, paging })))
-      })
-
-
-
-    }
-
+    buildPaging(authorColl, req, find).then(paging =>
+      // list authors
+      authorColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
+        .then(authors => 
+          authors.map(x =>
+            // for each author get the associated books, limited to 5
+            bookColl.find({ author: { $eq: x._id } }).limit(5).toArray()
+              // join author and book in one unique object
+              .then(books => {
+                return {
+                  author: x,
+                  books
+                }
+              })
+          )
+        )
+        // we need to wait until all the results are ready  
+        .then(x => Promise.all(x))
+        // pass the parameters to authorList to create the html page
+        .then(rows => res.end(authorList({ rows, paging, search })))
+    )
   })
 
   router.get('/author/:name/:id', function (req, res) {
