@@ -12,7 +12,7 @@ const menu = require('./menu')
 
 const wrapper = (p) => {
 
-  let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob e-reader' 
+  let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob - thousands of free e-books' 
 
   return `
   <!DOCTYPE html>
@@ -50,7 +50,7 @@ const wrapper = (p) => {
 
       <div id="pickoob-header">
 
-        <a href="/" title="Pickoob e-reader"><img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader" class="logo"></a>
+        <a href="/" title="Pickoob - thousands of free e-books"><img src="/static/images/logo.png" alt="Pickoob - thousands of free e-books" title="Pickoob - thousands of free e-books" class="logo"></a>
 
         ${menu}
 
@@ -70,7 +70,7 @@ const wrapper = (p) => {
         ${menu}
 
         <br><br>
-        &copy; 2020 Pickoob e-reader. All Rights Reserved.
+        &copy; 2020 Pickoob - thousands of free e-books. All Rights Reserved.
 
       </div>
 
