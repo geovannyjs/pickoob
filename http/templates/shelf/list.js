@@ -8,20 +8,18 @@ const bookItems = require('../book/bookItems')
 
 const list = (p) => {
 
-  if(p.search == 'invERRORalid'){
   let content = p.object
-    .map(x => `<a href="/subject/${sanitize(x.shelf.name)}/${x.shelf._id}">${x.shelf.name}</a><br><br> ${bookItems({ books: x.books })} <br><br> `).join('') + 
-    '<br><br>' + paging(p.paging, (page) => `/shelves?page=${page}`)
+    .map(x => 
+      `<a href="/shelf/${sanitize(x.shelf.name)}/${x.shelf._id}">${x.shelf.name}</a>
+      <br><br>
+      ${bookItems({ books: x.books })}
+      <br><br>`
+    )
+    .join('') + 
+    '<br><br>' + paging(p.paging, (page) => p.search ? `/shelves?page=${page}&search=${p.search}` : `/shelves?page=${page}`)
 
-    return wrapper({ content })
-  }
-  else{
-    let content = p.object
-    .map(x => `<a href="/subject/${sanitize(x.shelf.name)}/${x.shelf._id}">${x.shelf.name}</a><br><br> ${bookItems({ books: x.books })} <br><br> `).join('') + 
-    '<br><br>' + paging(p.paging, (page) => `/shelves?page=${page}&search=${p.search}`)
+  return wrapper({ content })
 
-  return wrapper({ content })    
-  }
 }
 
 module.exports = list
