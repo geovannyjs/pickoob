@@ -198,51 +198,40 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
       .then(x => res.end(languageView(x)))
   })
 
-  router.get('/shelves', function (req, res) {
+  router.get('/shelves', (req, res) => {
     res.statusCode = 200
-    let searchParameter = {name: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    if(searchParameter){
-      //same as author
-      buildPaging(shelfColl, req, searchParameter).then(paging => {
-        shelfColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
-        .then(shelves => shelves.map(x => {
-          return bookColl.find({shelf: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              shelf: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(shelfList({ object, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
-      })
 
-    }
-    else{
-      //same as author
-      buildPaging(shelfColl, req).then(paging => {
-        shelfColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(shelves => shelves.map(x => {
-          return bookColl.find({shelf: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              shelf: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(shelfList({ object, paging })))
-      })
+    let search = queryStringAsObject(req).search
+    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
 
-    }
-
+    buildPaging(shelfColl, req, find).then(paging =>
+      // list shelves
+      shelfColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
+        .then(shelves => 
+          shelves.map(x =>
+            // for each shelf get the associated books, limited to 5
+            bookColl.find({ shelf: x._id }).limit(5).toArray()
+              // join shelf and book in one unique object
+              .then(books => {
+                return {
+                  shelf: x,
+                  books
+                }
+              })
+          )
+        )
+        // we need to wait until all the results are ready  
+        .then(x => Promise.all(x))
+        // call the html template
+        .then(rows => res.end(shelfList({ rows, paging, search })))
+    )
   })
 
-  router.get('/shelf/:title/:id', function (req, res) {
+  router.get('/shelf/:title/:id', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    shelfColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    shelfColl.findOne({ _id: new mongo.ObjectID(req.params.id) })
       .then(x => res.end(shelfView(x)))
   })
 
