@@ -12,6 +12,7 @@ const sanitize = require('../lib/string/sanitize')
 // templates
 const wrapper = require('./templates/components/wrapper')
 
+const bookItems = require('./templates/book/bookItems')
 const bookList = require('./templates/book/list')
 const bookView = require('./templates/book/view')
 
@@ -89,18 +90,8 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-    Promise.all([
-      shelfColl.find({}).limit(10).toArray(),
-      authorColl.find({}).limit(10).toArray(),
-      bookColl.find({}).limit(10).toArray()
-    ]).then((items) =>{
-      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}" title="${x.name}">${x.name}</a><br>`).join('')
-      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}" title="${x.name}">${x.name}</a><br>`).join('')
-      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}" title="${x.title}">${x.title}</a><br>`).join('')
-      let Result = firstResult + secondResult + thirdResult
-      return Result
-    })
-    .then(content => res.end(wrapper({ content })))
+    bookColl.aggregate([{ $sample: { size: 10 } }]).toArray()
+      .then(books => res.end( wrapper({ content: bookItems({ books }) })))
 
   })
 
