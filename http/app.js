@@ -162,25 +162,17 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
       .then(x => res.end(authorView(x)))
   })
 
-  router.get('/books', function (req, res) {
+  router.get('/books', (req, res) => {
     res.statusCode = 200
-    let searchParameter = {title: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 
-    if(searchParameter){
-      buildPaging(bookColl, req, searchParameter).then(paging => {
-        bookColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
-          .then(books => res.end(bookList({ books, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
-      })
+    let search = queryStringAsObject(req).search
+    let find = { title: { $regex: new RegExp(search, 'i') } }
 
-    }
-    else{
-      buildPaging(bookColl, req).then(paging => {
-        bookColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-          .then(books => res.end(bookList({ books, paging })))
-      })
-    }
-
+    buildPaging(bookColl, req, find).then(paging => 
+      bookColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
+        .then(books => res.end(bookList({ books, paging, search })))
+    )
   })
 
   router.get('/book/:title/:id', function (req, res) {
