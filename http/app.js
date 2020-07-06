@@ -129,7 +129,7 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
         )
         // we need to wait until all the results are ready  
         .then(x => Promise.all(x))
-        // pass the parameters to authorList to create the html page
+        // call the html template
         .then(rows => res.end(authorList({ rows, paging, search })))
     )
   })
@@ -161,49 +161,40 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
       .then(x => res.end(bookView(x)))
   })
 
-  router.get('/languages', function (req, res) {
+  router.get('/languages', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    let searchParameter = {code: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
-    if(searchParameter){
-      //same as author
-      buildPaging(languageColl, req, searchParameter).then(paging => {
-        languageColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
-        .then(languages => languages.map(x => {
-          return bookColl.find({language: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              language: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(languageList({ object, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
-      })
-    }
-    else{    
-      //same as author
-      buildPaging(languageColl, req).then(paging => {
-        languageColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(language => language.map(x => {
-          return bookColl.find({language: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              language: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(languageList({ object, paging })))
-      })
-    
-    }
+
+    let search = queryStringAsObject(req).search
+    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+
+    buildPaging(languageColl, req, find).then(paging =>
+      // list languages
+      languageColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
+        .then(languages => 
+          languages.map(x =>
+            // for each language get the associated books, limited to 5
+            bookColl.find({ language: x._id }).limit(5).toArray()
+              // join language and book in one unique object
+              .then(books => {
+                return {
+                  language: x,
+                  books
+                }
+              })
+          )
+        )
+        // we need to wait until all the results are ready  
+        .then(x => Promise.all(x))
+        // call the html template
+        .then(rows => res.end(languageList({ rows, paging, search })))
+    )
   })
 
-  router.get('/language/:name/:id', function (req, res) {
+  router.get('/language/:name/:id', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    languageColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    languageColl.findOne({ _id: new mongo.ObjectID(req.params.id) })
       .then(x => res.end(languageView(x)))
   })
 
