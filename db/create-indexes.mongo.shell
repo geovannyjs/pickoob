@@ -3,9 +3,7 @@ use pickoob;
 db.book.createIndex({
   unique: "text",
   title: "text"
-}, {
-  language_override: "index_language"
-})
+}, { language_override: "index_language" })
 
 db.author.createIndex({
   unique: "text",
