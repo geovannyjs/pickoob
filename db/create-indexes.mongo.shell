@@ -1,0 +1,28 @@
+use pickoob;
+
+db.book.createIndex({
+  unique: "text",
+  title: "text"
+}, {
+  language_override: "index_language"
+})
+
+db.author.createIndex({
+  unique: "text",
+  name: "text"
+})
+
+db.language.createIndex({
+  code: "text",
+  name: "text"
+})
+
+db.shelf.createIndex({
+  unique: "text",
+  name: "text"
+})
+
+db.subject.createIndex({
+  unique: "text",
+  name: "text"
+})
