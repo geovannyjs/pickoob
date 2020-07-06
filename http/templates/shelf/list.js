@@ -1,5 +1,3 @@
-const sanitize = require('../../../lib/string/sanitize')
-
 const wrapper = require('../components/wrapper')
 const paging = require('../components/paging')
 
@@ -10,7 +8,7 @@ const list = (p) => {
 
   let content = p.rows
     .map(x => 
-      `<a href="/shelf/${sanitize(x.shelf.name)}/${x.shelf._id}">${x.shelf.name}</a>
+      `<a href="/shelf/${x.shelf.unique}/${x.shelf._id}">${x.shelf.name}</a>
       <br><br>
       ${bookItems({ books: x.books })}
       <br><br>`
