@@ -12,7 +12,7 @@ const view = (b) => {
 
 #viewer.scrolled {
   overflow: hidden;
-  width: 800px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
   background: url('/static/images/ajax-loader.gif') center center no-repeat;
@@ -239,13 +239,13 @@ svg {
 </style>
 
 <div class="pure-g">
-  <div class="pure-u-1-5">
+  <div class="pure-u-1 pure-u-lg-1-5">
     <img src="https://pickoob.ams3.cdn.digitaloceanspaces.com/content/books/${hashFragmenter(b._id.toString())}/cover.jpg">
     <br>
     issued: ${b.issued}<br>
     rights: ${b.rights}
   </div>
-  <div class="pure-u-4-5">
+  <div class="pure-u-1 pure-u-lg-4-5">
     <h1>${b.title}</h1>
     ${b.synopsis ? '<p>' + b.synopsis.replace(/\r\n/g, '').replace(/\n\n/g, '</p><p>') + '<p>' : ''}
   </div>

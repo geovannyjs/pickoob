@@ -54,7 +54,7 @@ const buildPaging = (col, req, search) => col.countDocuments(search || {}).then(
 
 
 //DB connection
-mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true }, (err, client) => {
+mongo.MongoClient.connect(process.env.PICKOOB_DSN || 'mongodb://127.0.0.1:27017', { useUnifiedTopology: true }, (err, client) => {
   
   const db = client.db('pickoob')
   const authorColl = db.collection('author')
@@ -293,6 +293,6 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
   })
 
   // make our http server listen to connections
-  server.listen(8080)
+  server.listen(8080, '127.0.0.1')
 
 })
