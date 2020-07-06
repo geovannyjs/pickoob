@@ -1,65 +1,82 @@
 const menu = require('./menu')
 
-const wrapper = (p) => `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>Pickoob e-reader</title>
 
-    <meta charset="utf-8">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <link rel="shortcut icon" type="image/png" href="/static/images/favicon.ico">
-    <link rel="stylesheet" media="screen" href="/static/css/pickoob.css">
+/*
+<link rel="canonical" href="https://www.amazon.com/Saint-X-Alexis-Schaitkin-ebook/dp/B07N67P3TP">
 
-    <link rel="stylesheet" href="/static/css/purecss/pure-min.css">
-    <link rel="stylesheet" href="/static/css/purecss/grids-responsive-min.css">
+<meta name="description" content="Saint X: A Novel - Kindle edition by Schaitkin, Alexis. Download it once and read it on your Kindle device, PC, phones or tablets. Use features like bookmarks, note taking and highlighting while reading Saint X: A Novel.">
 
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-PWJQNRQ');</script>
-    <!-- End Google Tag Manager -->
+<meta name="keywords" content="ebook,Schaitkin, Alexis,Saint X: A Novel,Celadon Books,560101 Celadon Books HC,Coming of Age,FICTION,FICTION / Coming of Age,FICTION / Family Life / Siblings,FICTION / Thrillers / Crime,FICTION / Women,Family Life,Family secrets,Fiction-Thriller,Fiction/City Life,Fiction/Coming of Age,Fiction/Crime,Fiction/Disaster,Fiction/Family Life - Siblings,Fiction/Literary,Fiction/Mystery &amp; Detective - General,Fiction/Psychological,Fiction/Thrillers - Domestic,Fiction/Urban,Fiction/Women,GENERAL,General Adult,Life change events,Literary,Murder - Investigation,Psychological fiction,Siblings,Sisters - Death,Thrillers (Fiction),United States,Women,psychological drama; domestic suspense; domestic noir; suspense thriller; family tragedies; missing persons; family vacation; murder mystery stories; new york city; literary fiction for women; highbrow literary fiction; caribbean; suspenseful novel; exotic novels; best beach reads; women mystery authors; female suspense authors,Coming of Age,FICTION / Coming of Age,FICTION / Family Life / Siblings,FICTION / Thrillers / Crime,FICTION / Women,Fiction/City Life,Fiction/Coming of Age,Fiction/Crime,Fiction/Disaster,Fiction/Family Life - Siblings,Fiction/Literary,Fiction/Mystery &amp; Detective - General,Fiction/Psychological,Fiction/Thrillers - Domestic,Fiction/Urban,Fiction/Women,Literary,Women">
 
-  </head>
-  <body>
+*/
 
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWJQNRQ"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+const wrapper = (p) => {
 
-    <div id="pickoob-header">
+  let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob e-reader' 
 
-      <a href="/" title="Pickoob e-reader"><img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader" class="logo"></a>
+  return `
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
 
-      ${menu}
+      <meta charset="utf-8">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-      <form action="/search" class="search" class="search">
-        <input type="text" id="search" name="search">
-        <input type="submit" value="Search">
-      </form>
+      <meta name="title" content="${title}">
+      <title>${title}</title>
 
-    </div>
+      <link rel="shortcut icon" type="image/png" href="/static/images/favicon.ico">
+      <link rel="stylesheet" media="screen" href="/static/css/pickoob.css">
 
-    <div id="pickoob-content">
-      ${p.content}
-    </div>
+      <link rel="stylesheet" href="/static/css/purecss/pure-min.css">
+      <link rel="stylesheet" href="/static/css/purecss/grids-responsive-min.css">
 
-    <div id="pickoob-footer">
-      
-      ${menu}
+      <!-- Google Tag Manager -->
+      <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-PWJQNRQ');</script>
+      <!-- End Google Tag Manager -->
 
-      <br><br>
-      &copy; 2020 Pickoob e-reader. All Rights Reserved.
+    </head>
+    <body>
 
-    </div>
+      <!-- Google Tag Manager (noscript) -->
+      <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PWJQNRQ"
+      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+      <!-- End Google Tag Manager (noscript) -->
 
-  </body>
-</html>
-`
+      <div id="pickoob-header">
+
+        <a href="/" title="Pickoob e-reader"><img src="/static/images/logo.png" alt="Pickoob e-reader" title="Pickoob e-reader" class="logo"></a>
+
+        ${menu}
+
+        <form action="/search" class="search" class="search">
+          <input type="text" id="search" name="search">
+          <input type="submit" value="Search">
+        </form>
+
+      </div>
+
+      <div id="pickoob-content">
+        ${p.content}
+      </div>
+
+      <div id="pickoob-footer">
+        
+        ${menu}
+
+        <br><br>
+        &copy; 2020 Pickoob e-reader. All Rights Reserved.
+
+      </div>
+
+    </body>
+  </html>
+  `
+}
 
 module.exports = wrapper

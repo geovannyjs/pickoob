@@ -1,10 +1,12 @@
+const hashFragmenter = require('../../../lib/cdn/hashFragmenter')
+
 const wrapper = require('../components/wrapper')
 
 
 const view = (b) => {
   let content = `
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
-<script src="http://futurepress.github.io/epub.js/dist/epub.js"></script>
+<script src="/static/js/epub-reader/jszip.min.js"></script>
+<script src="/static/js/epub-reader/epub.min.js"></script>
 
 <style>
 
@@ -13,8 +15,7 @@ const view = (b) => {
   width: 800px;
   margin: 0 auto;
   position: relative;
-  background: url('ajax-loader.gif') center center no-repeat;
-
+  background: url('/static/images/ajax-loader.gif') center center no-repeat;
 }
 
 #viewer.scrolled .epub-container {
@@ -239,7 +240,7 @@ svg {
 
 <div class="pure-g">
   <div class="pure-u-1-5">
-    <img src="/static/content/1/pg1.cover.medium.jpg">
+    <img src="https://pickoob.ams3.cdn.digitaloceanspaces.com/content/books/${hashFragmenter(b._id.toString())}/cover.jpg">
     <br>
     issued: ${b.issued}<br>
     rights: ${b.rights}
@@ -250,7 +251,10 @@ svg {
   </div>
 </div>
 
-<div id="wait" style="text-align:center;font-size:32px;">Please wait, loading the book into the reader...</div>
+<div id="wait" style="text-align:center;font-size:32px;">
+  Please wait, loading the book into the reader...
+  <img src="/static/images/ajax-loader.gif" style="display:block;margin:0 auto;">
+</div>
 <div id="reader" style="display:none">
   <select id="toc"></select>
   <div id="viewer" class="scrolled"></div>
@@ -264,7 +268,7 @@ svg {
   var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
 
   // Load the opf
-  var book = ePub(url || "https://s3.amazonaws.com/moby-dick/moby-dick.epub");
+  var book = ePub("https://pickoob.ams3.cdn.digitaloceanspaces.com/content/books/${hashFragmenter(b._id.toString())}/book.epub");
   var rendition = book.renderTo("viewer", {
     flow: "scrolled-doc",
     height: '600px'
@@ -391,7 +395,7 @@ svg {
 </script>
 
   `
-  return wrapper({ content })
+  return wrapper({ content, title: b.title })
 }
 
 module.exports = view

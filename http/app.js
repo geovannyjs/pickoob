@@ -51,7 +51,7 @@ const buildPaging = (col, req, search) => col.countDocuments(search || {}).then(
 
 
 //DB connection
-mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: true }, (err, client) => {
+mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true }, (err, client) => {
   
   const db = client.db('pickoob')
   const authorColl = db.collection('author')
@@ -94,9 +94,9 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
       authorColl.find({}).limit(10).toArray(),
       bookColl.find({}).limit(10).toArray()
     ]).then((items) =>{
-      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}">${x.name}</a><br>`).join('')
-      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}">${x.title}</a><br>`).join('')
+      let firstResult = items[0].map(x => `<a href="/shelf/${sanitize(x.name)}/${x._id}" title="${x.name}">${x.name}</a><br>`).join('')
+      let secondResult = items[1].map(x => `<a href="/author/${sanitize(x.name)}/${x._id}" title="${x.name}">${x.name}</a><br>`).join('')
+      let thirdResult = items[2].map(x => `<a href="/book/${sanitize(x.title)}/${x._id}" title="${x.title}">${x.title}</a><br>`).join('')
       let Result = firstResult + secondResult + thirdResult
       return Result
     })
@@ -152,9 +152,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
 
 
     }
-    console.log(queryStringAsObject(req).search)
-    //res.statusCode = 200
-    //res.setHeader('Content-Type', 'text/html; charset=utf-8')
+
   })
 
   router.get('/author/:name/:id', function (req, res) {
@@ -168,7 +166,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
     res.statusCode = 200
     let searchParameter = {title: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    //queryStringAsObject(req)
+
     if(searchParameter){
       buildPaging(bookColl, req, searchParameter).then(paging => {
         bookColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
@@ -182,7 +180,6 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
           .then(books => res.end(bookList({ books, paging })))
       })
     }
-    console.log(queryStringAsObject(req).search)
 
   })
 
@@ -277,7 +274,7 @@ mongo.MongoClient.connect('mongodb://localhost:27017', { useUnifiedTopology: tru
       })
 
     }
-    console.log(queryStringAsObject(req).search)
+
   })
 
   router.get('/shelf/:title/:id', function (req, res) {
