@@ -154,10 +154,10 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     )
   })
 
-  router.get('/book/:title/:id', function (req, res) {
+  router.get('/book/:title/:id', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    bookColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    bookColl.findOne({ _id: new mongo.ObjectID(req.params.id) })
       .then(x => res.end(bookView(x)))
   })
 
@@ -235,52 +235,44 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
       .then(x => res.end(shelfView(x)))
   })
 
-  router.get('/subjects', function (req, res) {
+  router.get('/subjects', (req, res) => {
     res.statusCode = 200
-    let searchParameter = {name: {$regex: new RegExp(queryStringAsObject(req).search, 'i')}}
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    if(searchParameter){
-      //same as author
-      buildPaging(subjectColl, req, searchParameter).then(paging => {
-        subjectColl.find(searchParameter).skip(paging.skip).limit(paging.limit).toArray()
-        .then(subjects => subjects.map(x => {
-          return bookColl.find({subject: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              subject: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(subjectList({ object, paging, search:((queryStringAsObject(req).search) ? queryStringAsObject(req).search : 'invERRORalid') })))
-      })
-    }
-    else{
-      //same as author
-      buildPaging(subjectColl, req).then(paging => {
-        subjectColl.find({}).skip(paging.skip).limit(paging.limit).toArray()
-        .then(subjects => subjects.map(x => {
-          return bookColl.find({subject: {$eq: x._id}}).limit(5).toArray()
-            .then(bookPromise => {return{
-              subject: x,
-              books: bookPromise
-            }}
-            )
-        }))  
-        .then((x) => Promise.all(x))
-        .then(object => res.end(subjectList({ object, paging })))
-      })
-    }
+
+    let search = queryStringAsObject(req).search
+    let find = { name: { $regex: new RegExp(queryStringAsObject(req).search, 'i') } }
+
+    buildPaging(subjectColl, req, find).then(paging =>
+      // list subjects
+      subjectColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
+        .then(subjects => 
+          subjects.map(x =>
+            // for each subject get the associated books, limited to 5
+            bookColl.find({ subject: x._id }).limit(5).toArray()
+              // join subject and book in one unique object
+              .then(books => {
+                return {
+                  subject: x,
+                  books
+                }
+              })
+          )
+        )
+        // we need to wait until all the results are ready  
+        .then(x => Promise.all(x))
+        // call the html template
+        .then(rows => res.end(subjectList({ rows, paging, search })))
+    )
   })
 
-  router.get('/subject/:name/:id', function (req, res) {
+  router.get('/subject/:name/:id', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    subjectColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    subjectColl.findOne({ _id: new mongo.ObjectID(req.params.id) })
       .then(x => res.end(subjectView(x)))
   })
 
-  router.get('/search', function (req, res) {
+  router.get('/search', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
 

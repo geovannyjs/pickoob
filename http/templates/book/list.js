@@ -1,6 +1,3 @@
-const hashFragmenter = require('../../../lib/cdn/hashFragmenter')
-const sanitize = require('../../../lib/string/sanitize')
-
 const wrapper = require('../components/wrapper')
 const paging = require('../components/paging')
 
