@@ -116,8 +116,8 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
       authorColl.find(find).skip(paging.skip).limit(paging.limit).toArray()
         .then(authors => 
           authors.map(x =>
-            // for each author get the associated books, limited to 5
-            bookColl.find({ author: { $eq: x._id } }).limit(5).toArray()
+            // for each author/contributor/illustrator get the associated books, limited to 5
+            bookColl.find({ $or: [{ author: x._id }, { contributor: x._id }, { illustrator: x._id }] }).limit(5).toArray()
               // join author and book in one unique object
               .then(books => {
                 return {
@@ -134,10 +134,10 @@ mongo.MongoClient.connect('mongodb://10.0.0.1:27017', { useUnifiedTopology: true
     )
   })
 
-  router.get('/author/:name/:id', function (req, res) {
+  router.get('/author/:name/:id', (req, res) => {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    authorColl.findOne({_id: new mongo.ObjectID(req.params.id)}, {})
+    authorColl.findOne({ _id: new mongo.ObjectID(req.params.id) })
       .then(x => res.end(authorView(x)))
   })
 
