@@ -4,15 +4,14 @@ const menu = require('./menu')
 /*
 <link rel="canonical" href="https://www.amazon.com/Saint-X-Alexis-Schaitkin-ebook/dp/B07N67P3TP">
 
-<meta name="description" content="Saint X: A Novel - Kindle edition by Schaitkin, Alexis. Download it once and read it on your Kindle device, PC, phones or tablets. Use features like bookmarks, note taking and highlighting while reading Saint X: A Novel.">
-
 <meta name="keywords" content="ebook,Schaitkin, Alexis,Saint X: A Novel,Celadon Books,560101 Celadon Books HC,Coming of Age,FICTION,FICTION / Coming of Age,FICTION / Family Life / Siblings,FICTION / Thrillers / Crime,FICTION / Women,Family Life,Family secrets,Fiction-Thriller,Fiction/City Life,Fiction/Coming of Age,Fiction/Crime,Fiction/Disaster,Fiction/Family Life - Siblings,Fiction/Literary,Fiction/Mystery &amp; Detective - General,Fiction/Psychological,Fiction/Thrillers - Domestic,Fiction/Urban,Fiction/Women,GENERAL,General Adult,Life change events,Literary,Murder - Investigation,Psychological fiction,Siblings,Sisters - Death,Thrillers (Fiction),United States,Women,psychological drama; domestic suspense; domestic noir; suspense thriller; family tragedies; missing persons; family vacation; murder mystery stories; new york city; literary fiction for women; highbrow literary fiction; caribbean; suspenseful novel; exotic novels; best beach reads; women mystery authors; female suspense authors,Coming of Age,FICTION / Coming of Age,FICTION / Family Life / Siblings,FICTION / Thrillers / Crime,FICTION / Women,Fiction/City Life,Fiction/Coming of Age,Fiction/Crime,Fiction/Disaster,Fiction/Family Life - Siblings,Fiction/Literary,Fiction/Mystery &amp; Detective - General,Fiction/Psychological,Fiction/Thrillers - Domestic,Fiction/Urban,Fiction/Women,Literary,Women">
 
 */
 
 const wrapper = (p) => {
 
-  let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob - thousands of free e-books' 
+  let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob - thousands of free e-books'
+  let description = p.description || 'A great collection of public domain and free books in Epub format that you can read online or download to your device.'
 
   return `
   <!DOCTYPE html>
@@ -24,6 +23,8 @@ const wrapper = (p) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
       <meta name="title" content="${title}">
+      <meta name="description" content="${description}">
+
       <title>${title}</title>
 
       <link rel="shortcut icon" type="image/png" href="/static/images/favicon.ico">
