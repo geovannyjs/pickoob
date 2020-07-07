@@ -11,7 +11,7 @@ const menu = require('./menu')
 const wrapper = (p) => {
 
   let title = (p.title ? p.title + ' @ ' : '') + 'Pickoob - thousands of free e-books'
-  let description = p.description || 'A great collection of public domain and free books in Epub format that you can read online or download to your device.'
+  let description = p.description || 'A great collection of public domain and free books in EPUB format that you can read online or download to your device.'
 
   return `
   <!DOCTYPE html>
