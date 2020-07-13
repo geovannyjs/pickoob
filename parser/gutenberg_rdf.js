@@ -77,6 +77,8 @@ const uploadFileToAWSS3 = (file, params, attempts = 0) => {
 
 if(!process.argv[2]) throw new Error('You must pass the dir path containing the RDFs, epubs and covers as parameter')
 
+// file counter - just for log purposes
+let nth = 0
 
 const parseRDF = (rdf, next) => {
 
@@ -85,6 +87,8 @@ const parseRDF = (rdf, next) => {
     next()
     return
   }
+
+  nth++
 
   let book = {
       source: {
@@ -281,7 +285,7 @@ const parseRDF = (rdf, next) => {
               .then(data => book.synopsis = getSynopsis(data))
               .catch(() => fs.promises.readFile(bookTxtGzip)
                 .then( buffer => gunzipPromise(buffer).then(x => book.synopsis = getSynopsis(x.toString('utf8'))) )
-              ).catch(() => console.error(`No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
+              ).catch(() => console.error(`${nth}: No synopsis files found: ${bookTxt} nor ${bookTxtGzip}`))
 
             return synopsis.then(() =>
               // so, insert the book
@@ -297,7 +301,7 @@ const parseRDF = (rdf, next) => {
                       book.epub = b.epub || {}
                       book.epub.size = epubStats.size
                       book.epub.inserted_at = new Date()
-                      console.log(`uploading ${epub}`)
+                      console.log(`${nth}: Uploading ${epub}`)
                       return uploadFileToAWSS3(epub, {
                         Bucket: 'pickoob',
                         Key: `content/books/${hashFragmenter(b._id.toString())}/book.epub`,
@@ -316,14 +320,14 @@ const parseRDF = (rdf, next) => {
                         book.cover = b.cover || {}
                         book.cover.size = coverStats.size
                         book.cover.inserted_at = new Date()
-                        console.log(`uploading ${cover}`)
+                        console.log(`${nth}: Uploading ${cover}`)
                         return uploadFileToAWSS3(cover, {
                           Bucket: 'pickoob',
                           Key: `content/books/${hashFragmenter(b._id.toString())}/cover.jpg`,
                           ACL: 'public-read'
                         })
                         // no problem if cover is not uploaded
-                        .catch(() => console.log(`book cover ${cover} not uploaded`))
+                        .catch(() => console.log(`${nth}: Book cover ${cover} not uploaded`))
                       }
 
                     })
@@ -334,7 +338,7 @@ const parseRDF = (rdf, next) => {
                     book.active = true
                     db.collection('book').updateOne({ _id: new mongo.ObjectID(b._id) }, { $set: { ...book, updated_at: new Date() } })
                   })
-                  .catch(() => console.log(`book epub ${epub} not uploaded`))
+                  .catch(() => console.log(`${nth}: Book epub ${epub} not uploaded`))
 
                 )
             )
@@ -344,9 +348,9 @@ const parseRDF = (rdf, next) => {
         })
     
       })
-      .catch(() => console.error(`Epub file not found: ${epub}`))
+      .catch(() => console.error(`${nth}: Epub file not found: ${epub}`))
       .then(() => {
-        console.log(`Done processing the file ${rdf}`)
+        console.log(`${nth}: Done processing the file ${rdf}`)
         next()
       })
 
