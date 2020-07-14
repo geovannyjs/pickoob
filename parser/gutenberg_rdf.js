@@ -80,7 +80,7 @@ if(!process.argv[2]) throw new Error('You must pass the dir path containing the 
 // file counter - just for log purposes
 let nth = 0
 
-const parseRDF = (rdf, next) => {
+const parseRDF = (skip) => (rdf, next) => {
 
   // not a RDF file
   if(! (/\.rdf$/i).test(rdf)) {
@@ -89,6 +89,12 @@ const parseRDF = (rdf, next) => {
   }
 
   nth++
+
+  if(skip > nth) {
+    console.log(`${nth}: Skiping the file ${rdf}`)
+    next()
+    return
+  }
 
   let book = {
       source: {
@@ -358,4 +364,4 @@ const parseRDF = (rdf, next) => {
 
 }
 
-readFilesRecursively(process.argv[2], parseRDF)
+readFilesRecursively(process.argv[2], parseRDF(process.argv[3] || 0))
