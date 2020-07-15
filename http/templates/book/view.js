@@ -396,7 +396,7 @@ svg {
 </script>
 
   `
-  return wrapper({ content, title: b.title, description: b.synopsis })
+  return wrapper({ content, title: b.title, description: b.synopsis ? b.synopsis.replace(/\r\n|\n\n|\"/g, ' ') : '' })
 }
 
 module.exports = view
