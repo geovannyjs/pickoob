@@ -396,7 +396,7 @@ svg {
 </script>
 
   `
-  return wrapper({ content, title: b.title })
+  return wrapper({ content, title: b.title, description: b.synopsis })
 }
 
 module.exports = view
