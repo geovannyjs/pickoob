@@ -7,8 +7,6 @@ const querystring = require('querystring')
 const mongo = require('mongodb')
 const R = require('ramda')
 
-const sanitize = require('../lib/string/sanitize')
-
 // templates
 const wrapper = require('./templates/components/wrapper')
 
@@ -64,10 +62,18 @@ mongo.MongoClient.connect(process.env.PICKOOB_DSN || 'mongodb://127.0.0.1:27017'
   const subjectColl = db.collection('subject')
 
   // make a router with out special options
-  var router = Router()
+  const router = Router()
 
-  var server = http.createServer(function onRequest(req, res) {
-    router(req, res, finalhandler(req, res))
+  const customFinalHandler = (req, res) => (err) => {
+    if(err) finalhandler(req, res)(err)
+    else {
+      res.statusCode = 404
+      res.end(wrapper({ content: `${req.url} not found` }))
+    } 
+  }
+
+  const server = http.createServer((req, res) => {
+    router(req, res, customFinalHandler(req, res))
   })
 
   // serving static files for when in dev mode
@@ -77,10 +83,10 @@ mongo.MongoClient.connect(process.env.PICKOOB_DSN || 'mongodb://127.0.0.1:27017'
 
       fs.readFile(__dirname + req.url, function (err,data) {
         if(err) {
-          res.writeHead(404)
+          res.statusCode = 404
           res.end(JSON.stringify(err))
         } else {
-          res.writeHead(200)
+          res.statusCode = 200
           res.end(data)
         }
       })
